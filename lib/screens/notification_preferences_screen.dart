@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_brand_logo.dart';
+import 'theme_colors.dart';
 
 class NotificationPreferencesScreen extends StatefulWidget {
   const NotificationPreferencesScreen({super.key});
@@ -20,22 +22,28 @@ class _NotificationPreferencesScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.95),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF003D1A)),
+          icon: Icon(Icons.arrow_back, color: context.appText),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Notification Preferences',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF003D1A),
-            fontSize: 18,
-          ),
+        title: Row(
+          children: [
+            const AppBrandLogo(size: 26),
+            const SizedBox(width: 8),
+            Text(
+              'Notification Preferences',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: context.appText,
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -43,11 +51,11 @@ class _NotificationPreferencesScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Choose what alerts you want to receive from Deslugify.',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF707970),
+                color: context.appMutedText,
                 height: 1.4,
               ),
             ),
@@ -135,8 +143,8 @@ class _NotificationPreferencesScreenState
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003D1A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.appAccent,
+                  foregroundColor: context.appOnAccent,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -159,10 +167,10 @@ class _NotificationPreferencesScreenState
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF003D1A),
+          color: context.appText,
         ),
       ),
     );
@@ -171,9 +179,9 @@ class _NotificationPreferencesScreenState
   Widget _card({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(children: children),
     );
@@ -189,27 +197,23 @@ class _NotificationPreferencesScreenState
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: Color(0xFF003D1A),
+          color: context.appText,
           fontSize: 15,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(fontSize: 13, color: Color(0xFF707970)),
+        style: TextStyle(fontSize: 13, color: context.appMutedText),
       ),
       value: value,
-      activeThumbColor: const Color(0xFF006D38),
-      activeTrackColor: const Color(0xFF94F4AD),
+      activeThumbColor: context.appAccent,
+      activeTrackColor: context.appAccent.withValues(alpha: 0.35),
       onChanged: onChanged,
     );
   }
 
-  Widget _divider() => const Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: Color(0xFFE1E3DD),
-      );
+  Widget _divider() =>
+      Divider(height: 1, indent: 16, endIndent: 16, color: context.appBorder);
 }

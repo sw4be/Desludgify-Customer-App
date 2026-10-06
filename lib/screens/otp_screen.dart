@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'theme_colors.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_brand_logo.dart';
+import 'auth_store.dart';
 
 class VerifyIdentityScreen extends StatefulWidget {
   const VerifyIdentityScreen({super.key});
@@ -9,9 +12,69 @@ class VerifyIdentityScreen extends StatefulWidget {
 }
 
 class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
-  final List<TextEditingController> _otpControllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers = List.generate(
+    6,
+    (_) => TextEditingController(),
+  );
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  Future<void> _verifyAndCreateAccount() async {
+    final otp = _otpControllers.map((controller) => controller.text).join();
+    if (otp.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter the full 6-digit code')),
+      );
+      return;
+    }
+    if (otp != '123456') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That verification code is incorrect.')),
+      );
+      return;
+    }
+    final arguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
+    if (arguments == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Registration details are missing.')),
+      );
+      return;
+    }
+    final registered = await AuthStore.register(
+      AppUser(
+        name: arguments['name'] ?? '',
+        phone: arguments['phone'] ?? '',
+        email: arguments['email'] ?? '',
+        password: arguments['password'] ?? '',
+        address: arguments['address'] ?? '',
+        latitude: double.tryParse(arguments['latitude'] ?? ''),
+        longitude: double.tryParse(arguments['longitude'] ?? ''),
+        profileImagePath: arguments['profileImagePath']?.isNotEmpty == true
+            ? arguments['profileImagePath']
+            : null,
+      ),
+    );
+    if (!mounted) return;
+    if (!registered) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An account with this email already exists.'),
+        ),
+      );
+      return;
+    }
+    // A successfully verified new account is signed in for the next launch.
+    await AuthStore.signIn(
+      arguments['email'] ?? '',
+      arguments['password'] ?? '',
+    );
+    if (!mounted) return;
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      '/account-created',
+      (route) => false,
+    );
+  }
 
   @override
   void dispose() {
@@ -36,8 +99,8 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
     }
   }
 
-  void _onKeyPressed(int index, RawKeyEvent event) {
-    if (event is RawKeyDownEvent &&
+  void _onKeyPressed(int index, KeyEvent event) {
+    if (event is KeyDownEvent &&
         event.logicalKey == LogicalKeyboardKey.backspace) {
       if (_otpControllers[index].text.isEmpty && index > 0) {
         _focusNodes[index - 1].requestFocus();
@@ -48,52 +111,86 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final arguments =
+        ModalRoute.of(context)?.settings.arguments as Map<String, String>?;
+    final phone = arguments?['phone'] ?? 'your phone number';
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
           child: Column(
             children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: 1,
+                      minHeight: 6,
+                      backgroundColor: context.appSurfaceContainer,
+                      color: context.appAccent,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    '5/5',
+                    style: TextStyle(
+                      color: context.appAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
                   color: const Color(0xFF94F4AD).withValues(alpha: 0.25),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.verified_user,
                   size: 48,
-                  color: Color(0xFF006D38),
+                  color: context.appAccent,
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              const Text(
+              Text(
                 "Verify Your Identity",
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF003D1A),
+                  color: context.appText,
                 ),
                 textAlign: TextAlign.center,
               ),
 
               const SizedBox(height: 12),
 
-              const Text(
-                "We have sent a 6-digit verification code to\na***@eco-tech.com. Please enter it below.",
+              Text(
+                'Enter the 6-digit verification code for\n$phone.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF707970),
+                  color: context.appMutedText,
                   height: 1.4,
                 ),
               ),
 
               const SizedBox(height: 40),
+
+              Text(
+                'Demo OTP: 123456',
+                style: TextStyle(
+                  color: context.appAccent,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 12),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -102,16 +199,16 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
 
               const SizedBox(height: 28),
 
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.schedule, size: 18, color: Color(0xFF006D38)),
+                  Icon(Icons.schedule, size: 18, color: context.appAccent),
                   SizedBox(width: 8),
                   Text(
                     "Expires in 01:59",
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF003D1A),
+                      color: context.appText,
                     ),
                   ),
                 ],
@@ -121,10 +218,10 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
 
               TextButton(
                 onPressed: () {},
-                child: const Text(
+                child: Text(
                   "Resend Code",
                   style: TextStyle(
-                    color: Color(0xFF006D38),
+                    color: context.appAccent,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -136,25 +233,10 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    final otp = _otpControllers.map((c) => c.text).join();
-                    if (otp.length == 6) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/account-created',
-                        (route) => false,
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please enter the full 6-digit code"),
-                        ),
-                      );
-                    }
-                  },
+                  onPressed: _verifyAndCreateAccount,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF003D1A),
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.appAccent,
+                    foregroundColor: context.appOnAccent,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
@@ -181,10 +263,10 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
 
               TextButton(
                 onPressed: () {},
-                child: const Text(
+                child: Text(
                   "Contact Support",
                   style: TextStyle(
-                    color: Color(0xFF006D38),
+                    color: context.appAccent,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -201,22 +283,17 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => Container(
                     height: 130,
-                    color: const Color(0xFFE1E3DD),
-                    child: const Center(
-                      child: Icon(Icons.eco, size: 40, color: Color(0xFF006D38)),
-                    ),
+                    color: context.appSurfaceContainer,
+                    child: Center(child: const AppBrandLogo(size: 56)),
                   ),
                 ),
               ),
 
               const SizedBox(height: 12),
 
-              const Text(
+              Text(
                 "Secured by Deslugify Core",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF707970),
-                ),
+                style: TextStyle(fontSize: 12, color: context.appMutedText),
               ),
             ],
           ),
@@ -229,42 +306,37 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
     return SizedBox(
       width: 48,
       height: 56,
-      child: RawKeyboardListener(
+      child: KeyboardListener(
         focusNode: FocusNode(),
-        onKey: (event) => _onKeyPressed(index, event),
+        onKeyEvent: (event) => _onKeyPressed(index, event),
         child: TextField(
           controller: _otpControllers[index],
           focusNode: _focusNodes[index],
           textAlign: TextAlign.center,
           keyboardType: TextInputType.number,
           maxLength: 1,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF003D1A),
+            color: context.appText,
           ),
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-          ],
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           decoration: InputDecoration(
             counterText: "",
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).colorScheme.surface,
             contentPadding: EdgeInsets.zero,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFE1E3DD)),
+              borderSide: BorderSide(color: context.appBorder),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFFE1E3DD)),
+              borderSide: BorderSide(color: context.appBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(
-                color: Color(0xFF006D38),
-                width: 2,
-              ),
+              borderSide: BorderSide(color: context.appAccent, width: 2),
             ),
           ),
           onChanged: (value) => _onOtpChanged(index, value),
@@ -275,22 +347,22 @@ class _VerifyIdentityScreenState extends State<VerifyIdentityScreen> {
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
-      backgroundColor: Colors.white.withValues(alpha: 0.95),
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
-        icon: const Icon(Icons.close, color: Color(0xFF003D1A)),
+        icon: Icon(Icons.close, color: context.appText),
         onPressed: () => Navigator.pop(context),
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.eco, color: Color(0xFF003D1A)),
-          SizedBox(width: 8),
+          const AppBrandLogo(size: 32),
+          const SizedBox(width: 8),
           Text(
-            "Deslugify",
+            'Deslugify',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: Color(0xFF003D1A),
+              color: context.appText,
             ),
           ),
         ],

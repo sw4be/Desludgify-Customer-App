@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'auth_store.dart';
+import 'theme_colors.dart';
+import '../widgets/app_brand_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSigningIn = false;
 
   @override
   void dispose() {
@@ -19,10 +23,28 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _signIn() async {
+    if (_isSigningIn) return;
+    setState(() => _isSigningIn = true);
+    final user = await AuthStore.signIn(
+      _emailController.text,
+      _passwordController.text,
+    );
+    if (!mounted) return;
+    setState(() => _isSigningIn = false);
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Incorrect email or password.')),
+      );
+      return;
+    }
+    Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -32,39 +54,36 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 // Logo
                 Container(
-                  padding: const EdgeInsets.all(18),
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF94F4AD).withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
+                    color: context.appText,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
-                    Icons.eco,
-                    color: Color(0xFF006D38),
-                    size: 52,
-                  ),
+                  child: const Center(child: AppBrandLogo(size: 36)),
                 ),
 
                 const SizedBox(height: 20),
 
                 // App Name
-                const Text(
+                Text(
                   "Deslugify",
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF003D1A),
+                    color: context.appText,
                   ),
                 ),
 
                 const SizedBox(height: 8),
 
                 // Subtitle
-                const Text(
+                Text(
                   "Smart Environmental\nService Management",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF707970),
+                    color: context.appMutedText,
                     height: 1.4,
                   ),
                 ),
@@ -78,24 +97,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: "Email",
                     hintText: "Enter your email",
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.email_outlined,
-                      color: Color(0xFF707970),
+                      color: context.appMutedText,
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE1E3DD)),
+                      borderSide: BorderSide(color: context.appBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF006D38),
+                      borderSide: BorderSide(
+                        color: context.appAccent,
                         width: 1.5,
                       ),
                     ),
@@ -111,16 +130,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   decoration: InputDecoration(
                     labelText: "Password",
                     hintText: "Enter your password",
-                    prefixIcon: const Icon(
+                    prefixIcon: Icon(
                       Icons.lock_outline,
-                      color: Color(0xFF707970),
+                      color: context.appMutedText,
                     ),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: const Color(0xFF707970),
+                        color: context.appMutedText,
                       ),
                       onPressed: () {
                         setState(() {
@@ -129,19 +148,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).colorScheme.surface,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(color: Color(0xFFE1E3DD)),
+                      borderSide: BorderSide(color: context.appBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF006D38),
+                      borderSide: BorderSide(
+                        color: context.appAccent,
                         width: 1.5,
                       ),
                     ),
@@ -154,16 +173,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/forgot-password');
+                    },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
+                    child: Text(
                       "Forgot Password?",
                       style: TextStyle(
-                        color: Color(0xFF006D38),
+                        color: context.appAccent,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -178,22 +199,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF003D1A),
-                      foregroundColor: Colors.white,
+                      backgroundColor: context.appAccent,
+                      foregroundColor: context.appOnAccent,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {Navigator.pushNamed(context, '/home');  
-                    },
-                    child: const Text(
-                      "Sign In",
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    onPressed: _isSigningIn ? null : _signIn,
+                    child: _isSigningIn
+                        ? const SizedBox.square(
+                            dimension: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            "Sign In",
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
 
@@ -201,31 +226,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // Register
                 Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: [
-    const Text(
-      "Don't have an account? ",
-      style: TextStyle(color: Color(0xFF707970)),
-    ),
-    TextButton(
-      onPressed: () {
-        Navigator.pushNamed(context, '/register');
-      },
-      style: TextButton.styleFrom(
-        padding: EdgeInsets.zero,
-        minimumSize: Size.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-      child: const Text(
-        "Register",
-        style: TextStyle(
-          color: Color(0xFF006D38),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-  ],
-),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account? ",
+                      style: TextStyle(color: context.appMutedText),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/register');
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        "Register",
+                        style: TextStyle(
+                          color: context.appAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

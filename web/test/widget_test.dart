@@ -1,20 +1,32 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:clientapp/main.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:deslugify/main.dart';
+import 'package:deslugify/screens/auth_store.dart';
 
 void main() {
-  testWidgets('App starts on Landing screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const DeslugifyApp());
-    await tester.pumpAndSettle();
-
-    // Landing should show app name
-    expect(find.text('Deslugify'), findsWidgets);
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Landing has Get Started and Login', (WidgetTester tester) async {
+  testWidgets('Fresh install opens the login screen', (
+    WidgetTester tester,
+  ) async {
     await tester.pumpWidget(const DeslugifyApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Get Started'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+    expect(find.text('Deslugify'), findsWidgets);
+    expect(find.text('Email'), findsOneWidget);
+    expect(find.text('Password'), findsOneWidget);
+  });
+
+  test('Demo account signs in and restores its session', () async {
+    final user = await AuthStore.signIn(
+      AuthStore.demoEmail,
+      AuthStore.demoPassword,
+    );
+
+    expect(user?.name, 'Justine Berdejo');
+    expect(user?.email, '423000470@ntc.edu.ph');
+    expect((await AuthStore.currentUser())?.email, AuthStore.demoEmail);
   });
 }

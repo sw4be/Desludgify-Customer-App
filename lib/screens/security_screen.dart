@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_brand_logo.dart';
+import 'auth_store.dart';
+import 'theme_colors.dart';
 
 class SecurityScreen extends StatefulWidget {
   const SecurityScreen({super.key});
@@ -29,22 +32,28 @@ class _SecurityScreenState extends State<SecurityScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.95),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF003D1A)),
+          icon: Icon(Icons.arrow_back, color: context.appText),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Security',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF003D1A),
-            fontSize: 18,
-          ),
+        title: Row(
+          children: [
+            const AppBrandLogo(size: 26),
+            const SizedBox(width: 8),
+            Text(
+              'Security',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: context.appText,
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -52,11 +61,11 @@ class _SecurityScreenState extends State<SecurityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Manage your password and account protection settings.',
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF707970),
+                color: context.appMutedText,
                 height: 1.4,
               ),
             ),
@@ -104,8 +113,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
                         child: ElevatedButton(
                           onPressed: _updatePassword,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF003D1A),
-                            foregroundColor: Colors.white,
+                            backgroundColor: context.appAccent,
+                            foregroundColor: context.appOnAccent,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -186,29 +195,29 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF94F4AD).withValues(alpha: 0.25),
+                      color: context.appAccent.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.devices_outlined,
-                      color: Color(0xFF006D38),
+                      color: context.appAccent,
                       size: 22,
                     ),
                   ),
-                  title: const Text(
+                  title: Text(
                     'Log out of all devices',
                     style: TextStyle(
                       fontWeight: FontWeight.w500,
-                      color: Color(0xFF003D1A),
+                      color: context.appText,
                     ),
                   ),
-                  subtitle: const Text(
+                  subtitle: Text(
                     'Sign out everywhere except this phone',
-                    style: TextStyle(fontSize: 13, color: Color(0xFF707970)),
+                    style: TextStyle(fontSize: 13, color: context.appMutedText),
                   ),
-                  trailing: const Icon(
+                  trailing: Icon(
                     Icons.chevron_right,
-                    color: Color(0xFF707970),
+                    color: context.appMutedText,
                   ),
                   onTap: _logoutAllDevices,
                 ),
@@ -220,7 +229,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
     );
   }
 
-  void _updatePassword() {
+  Future<void> _updatePassword() async {
     if (_currentPasswordController.text.isEmpty ||
         _newPasswordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
@@ -240,6 +249,26 @@ class _SecurityScreenState extends State<SecurityScreen> {
     if (_newPasswordController.text.length < 6) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Password must be at least 6 characters')),
+      );
+      return;
+    }
+
+    final user = await AuthStore.currentUser();
+    if (!mounted) return;
+    if (user == null || user.password != _currentPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Current password is incorrect')),
+      );
+      return;
+    }
+    final saved = await AuthStore.saveUser(
+      user.copyWith(password: _newPasswordController.text),
+      previousEmail: user.email,
+    );
+    if (!mounted) return;
+    if (!saved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not update the password')),
       );
       return;
     }
@@ -270,13 +299,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Logged out of all other devices')),
+                const SnackBar(
+                  content: Text('Logged out of all other devices'),
+                ),
               );
             },
-            child: const Text(
-              'Confirm',
-              style: TextStyle(color: Color(0xFFBA1A1A)),
-            ),
+            child: Text('Confirm', style: TextStyle(color: context.appError)),
           ),
         ],
       ),
@@ -288,10 +316,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
       padding: const EdgeInsets.only(left: 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF003D1A),
+          color: context.appText,
         ),
       ),
     );
@@ -300,9 +328,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
   Widget _card({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(children: children),
     );
@@ -319,23 +347,23 @@ class _SecurityScreenState extends State<SecurityScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF191D19),
+            color: context.appText,
           ),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFF8FAF3),
+            color: context.appSurfaceContainer,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE1E3DD)),
+            border: Border.all(color: context.appBorder),
           ),
           child: Row(
             children: [
               const SizedBox(width: 12),
-              const Icon(Icons.lock_outline, color: Color(0xFF707970), size: 20),
+              Icon(Icons.lock_outline, color: context.appMutedText, size: 20),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
@@ -353,7 +381,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   obscure
                       ? Icons.visibility_off_outlined
                       : Icons.visibility_outlined,
-                  color: const Color(0xFF707970),
+                  color: context.appMutedText,
                   size: 20,
                 ),
                 onPressed: onToggle,
@@ -377,34 +405,30 @@ class _SecurityScreenState extends State<SecurityScreen> {
       secondary: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFF94F4AD).withValues(alpha: 0.25),
+          color: context.appAccent.withValues(alpha: 0.14),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: const Color(0xFF006D38), size: 22),
+        child: Icon(icon, color: context.appAccent, size: 22),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontWeight: FontWeight.w500,
-          color: Color(0xFF003D1A),
+          color: context.appText,
           fontSize: 15,
         ),
       ),
       subtitle: Text(
         subtitle,
-        style: const TextStyle(fontSize: 13, color: Color(0xFF707970)),
+        style: TextStyle(fontSize: 13, color: context.appMutedText),
       ),
       value: value,
-      activeThumbColor: const Color(0xFF006D38),
-      activeTrackColor: const Color(0xFF94F4AD),
+      activeThumbColor: context.appAccent,
+      activeTrackColor: context.appAccent.withValues(alpha: 0.35),
       onChanged: onChanged,
     );
   }
 
-  Widget _divider() => const Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: Color(0xFFE1E3DD),
-      );
+  Widget _divider() =>
+      Divider(height: 1, indent: 16, endIndent: 16, color: context.appBorder);
 }

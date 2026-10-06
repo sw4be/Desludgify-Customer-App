@@ -1,12 +1,23 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'privacy_settings.dart';
 
 class LocationService {
-  /// GPS only if Privacy "Share location" is ON and OS permission is granted.
+  static const _lastLatitudeKey = 'last_location_latitude';
+  static const _lastLongitudeKey = 'last_location_longitude';
+
+  /// Uses the in-app privacy preference for passive map/tracking reads.
   static Future<Position?> getPositionIfAllowed() async {
     final allowedInApp = await PrivacySettings.getShareLocation();
     if (!allowedInApp) return null;
 
+    return getCurrentPosition();
+  }
+
+  /// Requests the OS location permission for an explicit geo-tag action.
+  static Future<Position?> getCurrentPosition() async {
     final serviceOn = await Geolocator.isLocationServiceEnabled();
     if (!serviceOn) return null;
 
@@ -19,11 +30,40 @@ class LocationService {
       return null;
     }
 
-    return Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-      ),
-    );
+    late final Position position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+    } on TimeoutException {
+      final lastKnownPosition = await Geolocator.getLastKnownPosition();
+      if (lastKnownPosition == null) rethrow;
+      position = lastKnownPosition;
+    }
+    await savePosition(position);
+    return position;
+  }
+
+  static Future<void> savePosition(Position position) async {
+    await saveCoordinates(position.latitude, position.longitude);
+  }
+
+  static Future<void> saveCoordinates(double latitude, double longitude) async {
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setDouble(_lastLatitudeKey, latitude);
+    await preferences.setDouble(_lastLongitudeKey, longitude);
+  }
+
+  static Future<({double latitude, double longitude})?>
+  getLastPosition() async {
+    final preferences = await SharedPreferences.getInstance();
+    final latitude = preferences.getDouble(_lastLatitudeKey);
+    final longitude = preferences.getDouble(_lastLongitudeKey);
+    if (latitude == null || longitude == null) return null;
+    return (latitude: latitude, longitude: longitude);
   }
 
   /// When user turns ON "Share location" in Privacy.

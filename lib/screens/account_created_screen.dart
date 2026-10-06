@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_brand_logo.dart';
+import 'theme_colors.dart';
 
 class AccountCreatedScreen extends StatelessWidget {
   const AccountCreatedScreen({super.key});
@@ -6,7 +8,7 @@ class AccountCreatedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -14,34 +16,44 @@ class AccountCreatedScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: context.appText,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: AppBrandLogo(size: 36)),
+              ),
+              const SizedBox(height: 20),
+              Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: const Color(0xFF94F4AD).withValues(alpha: 0.3),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_circle,
                   size: 72,
-                  color: Color(0xFF006D38),
+                  color: context.appAccent,
                 ),
               ),
               const SizedBox(height: 28),
-              const Text(
+              Text(
                 "Account Created!",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF003D1A),
+                  color: context.appText,
                 ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 "Your Deslugify account has been verified successfully. You're ready to get started.",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,
-                  color: Color(0xFF707970),
+                  color: context.appMutedText,
                   height: 1.4,
                 ),
               ),
@@ -53,24 +65,21 @@ class AccountCreatedScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
-                      '/login',
+                      '/home',
                       (route) => false,
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF003D1A),
-                    foregroundColor: Colors.white,
+                    backgroundColor: context.appAccent,
+                    foregroundColor: context.appOnAccent,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
                   child: const Text(
-                    "Go to Login",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    "Go to Home",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

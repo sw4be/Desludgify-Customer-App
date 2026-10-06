@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'theme_colors.dart';
+import '../widgets/app_brand_logo.dart';
 
 class ServiceFeedbackScreen extends StatefulWidget {
   const ServiceFeedbackScreen({super.key});
@@ -14,13 +16,11 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
   final Set<String> _selectedTags = {};
   final List<String> _attachments = []; // Track multiple attachments
 
-  // Constants for design consistency
-  static const primaryColor = Color(0xFF006D38);
-  static const backgroundColor = Color(0xFFF8FAF3);
-  static const textColorDark = Color(0xFF003D1A);
-  static const textColorMedium = Color(0xFF707970);
-  static const lightGreen = Color(0xFF94F4AD);
-  static const lightGrey = Color(0xFFC0C9BE);
+  Color get primaryColor => context.appAccent;
+  Color get textColorDark => context.appText;
+  Color get textColorMedium => context.appMutedText;
+  Color get lightGreen => context.appAccent.withValues(alpha: 0.15);
+  Color get lightGrey => context.appBorder;
 
   @override
   void dispose() {
@@ -31,8 +31,8 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: backgroundColor,
-      appBar: _buildAppBar(),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 100),
         child: Column(
@@ -68,26 +68,29 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white.withValues(alpha: 0.85),
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () => Navigator.of(context).pop(),
       ),
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.eco, color: textColorDark),
-          SizedBox(width: 8),
-          Text("Deslugify", style: TextStyle(fontWeight: FontWeight.bold)),
+          const AppBrandLogo(size: 32),
+          const SizedBox(width: 8),
+          const Text(
+            'Deslugify',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildHeader() {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -110,7 +113,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.6),
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Row(
@@ -122,7 +125,8 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
               width: 64,
               height: 64,
               fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 64),
+              errorBuilder: (context, error, stackTrace) =>
+                  const Icon(Icons.person, size: 64),
             ),
           ),
           const SizedBox(width: 16),
@@ -134,15 +138,18 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
                   "Marcus Thorne",
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
                 ),
-                const Text(
+                Text(
                   "Lead Technician",
                   style: TextStyle(color: textColorMedium),
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.plumbing, size: 16, color: primaryColor),
+                    Icon(Icons.plumbing, size: 16, color: primaryColor),
                     const SizedBox(width: 6),
-                    const Text("Sipsip Poso Negro", style: TextStyle(color: primaryColor)),
+                    Text(
+                      "Sipsip Poso Negro",
+                      style: TextStyle(color: primaryColor),
+                    ),
                   ],
                 ),
               ],
@@ -154,7 +161,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
               color: lightGreen,
               borderRadius: BorderRadius.circular(999),
             ),
-            child: const Text(
+            child: Text(
               "Completed",
               style: TextStyle(
                 fontWeight: FontWeight.bold,
@@ -186,7 +193,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
             ),
             Text(
               rating > 0 ? rating.toStringAsFixed(1) : "0.0",
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: primaryColor,
@@ -197,7 +204,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
         if (subtitle != null)
           Text(
             subtitle,
-            style: const TextStyle(color: textColorMedium, fontSize: 14),
+            style: TextStyle(color: textColorMedium, fontSize: 14),
           ),
         const SizedBox(height: 12),
         Row(
@@ -243,11 +250,9 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isSelected ? lightGreen : Colors.white.withValues(alpha: 0.6),
+              color: isSelected ? lightGreen : context.appSurface,
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(
-                color: isSelected ? primaryColor : lightGrey,
-              ),
+              border: Border.all(color: isSelected ? primaryColor : lightGrey),
             ),
             child: Text(
               tag,
@@ -279,14 +284,14 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
             hintText: "Write your feedback here...",
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
             filled: true,
-            fillColor: Colors.white.withValues(alpha: 0.6),
+            fillColor: context.appSurfaceContainer,
           ),
         ),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
             "${_feedbackController.text.length} / 500",
-            style: const TextStyle(color: textColorMedium, fontSize: 12),
+            style: TextStyle(color: textColorMedium, fontSize: 12),
           ),
         ),
       ],
@@ -304,10 +309,16 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
         const SizedBox(height: 12),
         Row(
           children: [
-            _attachmentButton(Icons.add_a_photo, "ADD PHOTO", onPressed: _addPhoto),
+            _attachmentButton(
+              Icons.add_a_photo,
+              "ADD PHOTO",
+              onPressed: _addPhoto,
+            ),
             if (_attachments.isNotEmpty) ...[
               const SizedBox(width: 12),
-              ..._attachments.take(2).map((url) => _buildAttachmentPreview(url)),
+              ..._attachments
+                  .take(2)
+                  .map((url) => _buildAttachmentPreview(url)),
             ],
           ],
         ),
@@ -316,14 +327,21 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
           Wrap(
             spacing: 12,
             runSpacing: 12,
-            children: _attachments.skip(2).map((url) => _buildAttachmentPreview(url)).toList(),
+            children: _attachments
+                .skip(2)
+                .map((url) => _buildAttachmentPreview(url))
+                .toList(),
           ),
         ],
       ],
     );
   }
 
-  Widget _attachmentButton(IconData icon, String label, {VoidCallback? onPressed}) {
+  Widget _attachmentButton(
+    IconData icon,
+    String label, {
+    VoidCallback? onPressed,
+  }) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
@@ -356,10 +374,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
           height: 100,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            image: DecorationImage(
-              image: NetworkImage(url),
-              fit: BoxFit.cover,
-            ),
+            image: DecorationImage(image: NetworkImage(url), fit: BoxFit.cover),
           ),
         ),
         Positioned(
@@ -390,6 +405,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
               backgroundColor: primaryColor,
+              foregroundColor: context.appOnAccent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -409,10 +425,7 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            "Skip for now",
-            style: TextStyle(color: textColorMedium),
-          ),
+          child: Text("Skip for now", style: TextStyle(color: textColorMedium)),
         ),
       ],
     );
@@ -422,8 +435,11 @@ class _ServiceFeedbackScreenState extends State<ServiceFeedbackScreen> {
     // In a real app, you would implement image picker logic here
     // For demo purposes, we'll add a placeholder image
     setState(() {
-      if (_attachments.length < 5) { // Limit to 5 attachments
-        _attachments.add('https://picsum.photos/id/${_attachments.length * 100}/200/200');
+      if (_attachments.length < 5) {
+        // Limit to 5 attachments
+        _attachments.add(
+          'https://picsum.photos/id/${_attachments.length * 100}/200/200',
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Maximum 5 attachments allowed')),

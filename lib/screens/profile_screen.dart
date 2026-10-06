@@ -1,8 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../widgets/app_bottom_nav.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
+import 'auth_store.dart';
+import 'theme_colors.dart';
 import 'theme_controller.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -14,8 +20,147 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   File? _profileImage;
+  AppUser? _user;
 
   final ImagePicker _picker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    AuthStore.currentUser().then((user) {
+      if (mounted) setState(() => _user = user);
+    });
+  }
+
+  Future<void> _saveUser(AppUser updated) async {
+    final oldEmail = _user?.email;
+    if (oldEmail == null) return;
+    final saved = await AuthStore.saveUser(updated, previousEmail: oldEmail);
+    if (!mounted) return;
+    if (!saved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('That email is already in use.')),
+      );
+      return;
+    }
+    setState(() => _user = updated);
+  }
+
+  Future<String?> _askForText(String title, String currentValue) async {
+    final controller = TextEditingController(text: currentValue);
+    final value = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: title == 'Email'
+              ? TextInputType.emailAddress
+              : TextInputType.text,
+          decoration: InputDecoration(labelText: title),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return value;
+  }
+
+  Future<void> _editName() async {
+    final user = _user;
+    if (user == null) return;
+    final name = await _askForText('Full Name', user.name);
+    if (name == null || name.isEmpty) return;
+    await _saveUser(user.copyWith(name: name));
+  }
+
+  Future<void> _editEmail() async {
+    final user = _user;
+    if (user == null) return;
+    final email = await _askForText('Email', user.email);
+    if (email == null || !email.contains('@')) return;
+    await _saveUser(user.copyWith(email: email));
+  }
+
+  Future<void> _editPhone() async {
+    final user = _user;
+    if (user == null) return;
+    final phone = await _askForText('Phone Number', user.phone);
+    if (!mounted || phone == null || phone.isEmpty || phone == user.phone) {
+      return;
+    }
+    final codeController = TextEditingController();
+    final verified = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Verify phone number'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Enter the verification code sent to $phone.'),
+            const SizedBox(height: 12),
+            const Text('Demo verification code: 123456'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: codeController,
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+              decoration: const InputDecoration(labelText: '6-digit code'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              codeController.text.trim() == '123456',
+            ),
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
+    codeController.dispose();
+    if (verified == true) await _saveUser(user.copyWith(phone: phone));
+  }
+
+  Future<void> _editAddress() async {
+    final user = _user;
+    if (user == null) return;
+    final selected =
+        await showDialog<({String address, double latitude, double longitude})>(
+          context: context,
+          builder: (dialogContext) => _AddressPickerDialog(
+            initialAddress: user.address,
+            initialLatitude: user.latitude,
+            initialLongitude: user.longitude,
+          ),
+        );
+    if (selected == null) return;
+    await _saveUser(
+      user.copyWith(
+        address: selected.address,
+        latitude: selected.latitude,
+        longitude: selected.longitude,
+      ),
+    );
+  }
 
   Future<void> _selectProfilePicture() async {
     showModalBottomSheet(
@@ -36,9 +181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
 
                   if (image != null) {
-                    setState(() {
-                      _profileImage = File(image.path);
-                    });
+                    await _saveProfileImage(image);
                   }
                 },
               ),
@@ -55,9 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
 
                   if (image != null) {
-                    setState(() {
-                      _profileImage = File(image.path);
-                    });
+                    await _saveProfileImage(image);
                   }
                 },
               ),
@@ -76,33 +217,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  Future<void> _saveProfileImage(XFile image) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final extension = image.path.contains('.')
+          ? image.path.substring(image.path.lastIndexOf('.'))
+          : '.jpg';
+      final savedFile = await File(image.path).copy(
+        '${directory.path}/profile_${DateTime.now().microsecondsSinceEpoch}$extension',
+      );
+      if (_user == null) _user = await AuthStore.currentUser();
+      final user = _user;
+      if (user != null) {
+        await _saveUser(user.copyWith(profileImagePath: savedFile.path));
+      }
+      if (mounted) setState(() => _profileImage = savedFile);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save the profile photo.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bg = isDark
-        ? const Color(0xFF0F1410)
-        : const Color(0xFFF8FAF3);
+    final bg = isDark ? const Color(0xFF08090A) : const Color(0xFFF8FAF3);
 
-    final card = isDark
-        ? const Color(0xFF1A211C)
-        : Colors.white;
+    final card = isDark ? const Color(0xFF17181C) : Colors.white;
 
-    final text = isDark
-        ? const Color(0xFFE8EBE6)
-        : const Color(0xFF003D1A);
+    final text = isDark ? const Color(0xFFF5F6F7) : const Color(0xFF003D1A);
 
-    final muted = isDark
-        ? const Color(0xFF9AA39A)
-        : const Color(0xFF707970);
+    final muted = isDark ? const Color(0xFFB0B4BC) : const Color(0xFF707970);
 
-    final border = isDark
-        ? const Color(0xFF2A332C)
-        : const Color(0xFFE8EBE6);
+    final border = isDark ? const Color(0xFF3A3D44) : const Color(0xFFE8EBE6);
 
-    final accent = isDark
-        ? const Color(0xFF94F4AD)
-        : const Color(0xFF006D38);
+    final accent = isDark ? const Color(0xFFE8EAED) : const Color(0xFF006D38);
 
     final iconBg = isDark
         ? const Color(0xFF94F4AD).withValues(alpha: 0.15)
@@ -112,39 +264,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: bg,
 
       appBar: AppBar(
-        backgroundColor: isDark
-            ? const Color(0xFF1A211C)
-            : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF08090A) : Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
 
         title: Row(
           children: [
-            Icon(Icons.eco, color: accent, size: 26),
-            const SizedBox(width: 10),
             Text(
-              "Deslugify",
+              'Profile',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                color: isDark
-                    ? accent
-                    : const Color(0xFF003D1A),
+                color: isDark ? accent : const Color(0xFF003D1A),
               ),
             ),
           ],
         ),
 
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.search,
-              color: isDark
-                  ? accent
-                  : const Color(0xFF003D1A),
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
 
       body: SingleChildScrollView(
@@ -156,25 +291,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const SizedBox(height: 28),
 
-            _buildContactInfo(
-              card,
-              border,
-              text,
-              muted,
-              accent,
-              iconBg,
-            ),
+            _buildContactInfo(card, border, text, muted, accent, iconBg),
 
             const SizedBox(height: 28),
 
-            _buildSettingsSection(
-              context,
-              card,
-              border,
-              text,
-              muted,
-              accent,
-            ),
+            _buildSettingsSection(context, card, border, text, muted, accent),
 
             const SizedBox(height: 32),
 
@@ -183,16 +304,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
 
-      bottomNavigationBar: _buildBottomNav(
-        context,
-        isDark,
-        card,
-      ),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildProfileHeader(Color text, Color muted) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final storedImagePath = _user?.profileImagePath;
+    final profileImage = _profileImage ??
+        (storedImagePath == null ? null : File(storedImagePath));
+    final hasProfileImage = profileImage?.existsSync() ?? false;
 
     return Column(
       children: [
@@ -209,10 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(22),
 
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 4,
-                  ),
+                  border: Border.all(color: Colors.white, width: 4),
 
                   boxShadow: [
                     BoxShadow(
@@ -225,11 +343,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
 
-                  child: _profileImage != null
-                      ? Image.file(
-                          _profileImage!,
-                          fit: BoxFit.cover,
-                        )
+                  child: hasProfileImage
+                      ? Image.file(profileImage!, fit: BoxFit.cover)
                       : Container(
                           color: isDark
                               ? const Color(0xFF2A332C)
@@ -261,17 +376,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: const Color(0xFF006D38),
                     borderRadius: BorderRadius.circular(10),
 
-                    border: Border.all(
-                      color: Colors.white,
-                      width: 2,
-                    ),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
 
-                  child: const Icon(
-                    Icons.edit,
-                    color: Colors.white,
-                    size: 16,
-                  ),
+                  child: const Icon(Icons.edit, color: Colors.white, size: 16),
                 ),
               ),
             ),
@@ -280,24 +388,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
         const SizedBox(height: 16),
 
-        Text(
-          "Julian Thorne",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: text,
+        InkWell(
+          onTap: _editName,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _user?.name ?? 'Loading profile...',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: text,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Icon(Icons.edit_outlined, size: 16, color: muted),
+            ],
           ),
         ),
 
         const SizedBox(height: 4),
 
-        Text(
-          "Senior Urban Ecologist",
-          style: TextStyle(
-            fontSize: 15,
-            color: muted,
-          ),
-        ),
+        Text(_user?.email ?? '', style: TextStyle(fontSize: 15, color: muted)),
       ],
     );
   }
@@ -318,13 +430,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _contactCard(
                 Icons.email_outlined,
                 "Email",
-                "j.thorne@ecocorp.city",
+                _user?.email ?? '',
                 card,
                 border,
                 text,
                 muted,
                 accent,
                 iconBg,
+                onTap: _editEmail,
               ),
             ),
 
@@ -334,13 +447,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: _contactCard(
                 Icons.phone_outlined,
                 "Phone",
-                "+1 (555) 012-3456",
+                _user?.phone.isNotEmpty == true
+                    ? _user!.phone
+                    : 'Add phone number',
                 card,
                 border,
                 text,
                 muted,
                 accent,
                 iconBg,
+                onTap: _editPhone,
               ),
             ),
           ],
@@ -351,13 +467,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _contactCard(
           Icons.location_on_outlined,
           "Home Address",
-          "Emerald Skyway, Suite 402, Neo-Portland, OR",
+          _user?.address.isNotEmpty == true
+              ? _user!.address
+              : 'Add home address',
           card,
           border,
           text,
           muted,
           accent,
           iconBg,
+          onTap: _editAddress,
         ),
       ],
     );
@@ -372,8 +491,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Color text,
     Color muted,
     Color accent,
-    Color iconBg,
-  ) {
+    Color iconBg, {
+    VoidCallback? onTap,
+  }) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -384,51 +504,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
         border: Border.all(color: border),
       ),
 
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
 
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(12),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+
+              child: Icon(icon, color: accent, size: 22),
             ),
 
-            child: Icon(
-              icon,
-              color: accent,
-              size: 22,
-            ),
-          ),
+            const SizedBox(width: 14),
 
-          const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label, style: TextStyle(fontSize: 12, color: muted)),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: muted,
+                  const SizedBox(height: 2),
+
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      color: text,
+                    ),
                   ),
-                ),
-
-                const SizedBox(height: 2),
-
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: text,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -472,10 +586,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: text,
                 muted: muted,
                 onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/notification-preferences',
-                  );
+                  Navigator.pushNamed(context, '/notification-preferences');
                 },
               ),
 
@@ -554,61 +665,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           children: [
             ListTile(
-              leading: const Icon(
-                Icons.light_mode,
-                color: Color(0xFF006D38),
-              ),
+              leading: Icon(Icons.light_mode, color: context.appAccent),
 
               title: const Text('Light Mode'),
 
-              onTap: () {
-                ThemeController.setLight();
+              onTap: () async {
+                await ThemeController.setLight();
                 Navigator.pop(ctx);
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Light Mode selected'),
-                  ),
+                  const SnackBar(content: Text('Light Mode selected')),
                 );
               },
             ),
 
             ListTile(
-              leading: const Icon(
-                Icons.dark_mode,
-                color: Color(0xFF006D38),
-              ),
+              leading: Icon(Icons.dark_mode, color: context.appAccent),
 
               title: const Text('Dark Mode'),
 
-              onTap: () {
-                ThemeController.setDark();
+              onTap: () async {
+                await ThemeController.setDark();
                 Navigator.pop(ctx);
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Dark Mode selected'),
-                  ),
+                  const SnackBar(content: Text('Dark Mode selected')),
                 );
               },
             ),
 
             ListTile(
-              leading: const Icon(
-                Icons.brightness_auto,
-                color: Color(0xFF006D38),
-              ),
+              leading: Icon(Icons.brightness_auto, color: context.appAccent),
 
               title: const Text('System Default'),
 
-              onTap: () {
-                ThemeController.setSystem();
+              onTap: () async {
+                await ThemeController.setSystem();
                 Navigator.pop(ctx);
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('System Default selected'),
-                  ),
+                  const SnackBar(content: Text('System Default selected')),
                 );
               },
             ),
@@ -628,47 +724,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required Color muted,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 2,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
 
       leading: Icon(icon, color: muted),
 
       title: Text(
         title,
-        style: TextStyle(
-          fontWeight: FontWeight.w500,
-          color: text,
-        ),
+        style: TextStyle(fontWeight: FontWeight.w500, color: text),
       ),
 
       subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 13,
-                color: muted,
-              ),
-            )
+          ? Text(subtitle, style: TextStyle(fontSize: 13, color: muted))
           : null,
 
-      trailing: trailing ?? Icon(
-        Icons.chevron_right,
-        color: muted,
-      ),
+      trailing: trailing ?? Icon(Icons.chevron_right, color: muted),
 
       onTap: onTap,
     );
   }
 
   Widget _divider(Color border) {
-    return Divider(
-      height: 1,
-      indent: 16,
-      endIndent: 16,
-      color: border,
-    );
+    return Divider(height: 1, indent: 16, endIndent: 16, color: border);
   }
 
   Widget _buildLogoutButton(BuildContext context) {
@@ -683,9 +759,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             builder: (ctx) => AlertDialog(
               title: const Text("Logout"),
 
-              content: const Text(
-                "Are you sure you want to logout?",
-              ),
+              content: const Text("Are you sure you want to logout?"),
 
               actions: [
                 TextButton(
@@ -694,21 +768,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
 
                 TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(ctx);
-
+                    await AuthStore.signOut();
+                    if (!context.mounted) return;
                     Navigator.pushNamedAndRemoveUntil(
                       context,
-                      '/login',
+                      '/landing',
                       (route) => false,
                     );
                   },
 
-                  child: const Text(
+                  child: Text(
                     "Logout",
-                    style: TextStyle(
-                      color: Color(0xFFBA1A1A),
-                    ),
+                    style: TextStyle(color: context.appError),
                   ),
                 ),
               ],
@@ -716,15 +789,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
         },
 
-        icon: const Icon(
-          Icons.logout,
-          color: Color(0xFFBA1A1A),
-        ),
+        icon: Icon(Icons.logout, color: context.appError),
 
-        label: const Text(
+        label: Text(
           "Logout",
           style: TextStyle(
-            color: Color(0xFFBA1A1A),
+            color: context.appError,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -732,10 +802,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 16),
 
-          side: const BorderSide(
-            color: Color(0xFFBA1A1A),
-            width: 1.5,
-          ),
+          side: BorderSide(color: context.appError, width: 1.5),
 
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
@@ -745,136 +812,125 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildBottomNav(
-    BuildContext context,
-    bool isDark,
-    Color card,
-  ) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-
-      padding: const EdgeInsets.symmetric(vertical: 10),
-
-      decoration: BoxDecoration(
-        color: isDark
-            ? card
-            : Colors.white.withValues(alpha: 0.95),
-
-        borderRadius: BorderRadius.circular(20),
-
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-
-        children: [
-          _NavItem(
-            icon: Icons.home_outlined,
-            label: "Home",
-
-            onTap: () {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-          ),
-
-          _NavItem(
-            icon: Icons.add_circle_outline,
-            label: "Request",
-
-            onTap: () {
-              Navigator.pushNamed(context, '/schedule-service');
-            },
-          ),
-
-          _NavItem(
-            icon: Icons.assignment_outlined,
-            label: "Tasks",
-
-            onTap: () {
-              Navigator.pushNamed(context, '/request-history');
-            },
-          ),
-
-          _NavItem(
-            icon: Icons.notifications_outlined,
-            label: "Alerts",
-
-            onTap: () {
-              Navigator.pushNamed(context, '/messages');
-            },
-          ),
-
-          const _NavItem(
-            icon: Icons.person,
-            label: "Profile",
-            active: true,
-          ),
-        ],
-      ),
-    );
+  Widget _buildBottomNav() {
+    return const AppBottomNav(currentIndex: 4);
   }
 }
 
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
+class _AddressPickerDialog extends StatefulWidget {
+  final String initialAddress;
+  final double? initialLatitude;
+  final double? initialLongitude;
 
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    this.onTap,
+  const _AddressPickerDialog({
+    required this.initialAddress,
+    required this.initialLatitude,
+    required this.initialLongitude,
   });
 
   @override
+  State<_AddressPickerDialog> createState() => _AddressPickerDialogState();
+}
+
+class _AddressPickerDialogState extends State<_AddressPickerDialog> {
+  static const _defaultCenter = LatLng(14.5995, 120.9842);
+  late final TextEditingController _addressController = TextEditingController(
+    text: widget.initialAddress,
+  );
+  LatLng? _pin;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialLatitude != null && widget.initialLongitude != null) {
+      _pin = LatLng(widget.initialLatitude!, widget.initialLongitude!);
+    }
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final color = active
-        ? (isDark
-            ? const Color(0xFF94F4AD)
-            : const Color(0xFF006D38))
-        : (isDark
-            ? const Color(0xFF9AA39A)
-            : const Color(0xFF707970));
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-
-        children: [
-          Icon(icon, color: color, size: 24),
-
-          const SizedBox(height: 3),
-
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: active
-                  ? FontWeight.w600
-                  : FontWeight.normal,
+    final center = _pin ?? _defaultCenter;
+    return AlertDialog(
+      title: const Text('Pin your home address'),
+      content: SizedBox(
+        width: 520,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _addressController,
+              decoration: const InputDecoration(labelText: 'Home address'),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 280,
+              child: FlutterMap(
+                options: MapOptions(
+                  initialCenter: center,
+                  initialZoom: 14,
+                  onTap: (_, point) => setState(() => _pin = point),
+                ),
+                children: [
+                  TileLayer(
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.clientapp',
+                    maxZoom: 19,
+                  ),
+                  if (_pin != null)
+                    MarkerLayer(
+                      markers: [
+                        Marker(
+                          point: _pin!,
+                          width: 44,
+                          height: 44,
+                          child: const Icon(
+                            Icons.location_pin,
+                            color: Colors.red,
+                            size: 42,
+                          ),
+                        ),
+                      ],
+                    ),
+                  const RichAttributionWidget(
+                    attributions: [
+                      TextSourceAttribution('© OpenStreetMap contributors'),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _pin == null
+                  ? 'Tap the map to place a pin before saving.'
+                  : 'Pinned: ${_pin!.latitude.toStringAsFixed(5)}, ${_pin!.longitude.toStringAsFixed(5)}',
+            ),
+          ],
+        ),
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _pin == null || _addressController.text.trim().isEmpty
+              ? null
+              : () => Navigator.pop(context, (
+                  address: _addressController.text.trim(),
+                  latitude: _pin!.latitude,
+                  longitude: _pin!.longitude,
+                )),
+          child: const Text('Save address'),
+        ),
+      ],
     );
   }
 }
-

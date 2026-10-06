@@ -1,20 +1,53 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import '../widgets/app_bottom_nav.dart';
+import '../widgets/task_status_filter.dart';
+import 'theme_colors.dart';
 
 class RequestHistoryScreen extends StatelessWidget {
   const RequestHistoryScreen({super.key});
 
+  Future<void> _saveReport(
+    BuildContext context, {
+    required String id,
+    required String title,
+    required String date,
+    required String status,
+  }) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/$id-report.txt');
+      await file.writeAsString(
+        'Service Report\n$id\n$title\nDate: $date\nStatus: $status\n',
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Report saved to ${file.path}')),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save the service report.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0F1410) : const Color(0xFFF8FAF3);
-    final card = isDark ? const Color(0xFF1A211C) : Colors.white;
-    final text = isDark ? const Color(0xFFE8EBE6) : const Color(0xFF003D1A);
-    final muted = isDark ? const Color(0xFF9AA39A) : const Color(0xFF707970);
-    final border = isDark ? const Color(0xFF2A332C) : const Color(0xFFE8EBE6);
-    final accent = isDark ? const Color(0xFF94F4AD) : const Color(0xFF006D38);
-    final chipBg = isDark ? const Color(0xFF2A332C) : const Color(0xFFECEFE8);
-    final chipInactive = isDark ? const Color(0xFF2A332C) : const Color(0xFFE6E9E2);
-    final infoBox = isDark ? const Color(0xFF243028) : const Color(0xFFF2F5EE);
+    final bg = isDark ? const Color(0xFF08090A) : const Color(0xFFF8FAF3);
+    final card = isDark ? const Color(0xFF17181C) : Colors.white;
+    final text = isDark ? const Color(0xFFF5F6F7) : const Color(0xFF003D1A);
+    final muted = isDark ? const Color(0xFFB0B4BC) : const Color(0xFF707970);
+    final border = isDark ? const Color(0xFF3A3D44) : const Color(0xFFE8EBE6);
+    final accent = isDark ? const Color(0xFFE8EAED) : const Color(0xFF006D38);
+    final chipBg = isDark ? const Color(0xFF202126) : const Color(0xFFECEFE8);
+    final chipInactive = isDark
+        ? const Color(0xFF202126)
+        : const Color(0xFFE6E9E2);
+    final infoBox = isDark ? const Color(0xFF202126) : const Color(0xFFF2F5EE);
 
     return Scaffold(
       backgroundColor: bg,
@@ -26,7 +59,7 @@ class RequestHistoryScreen extends StatelessWidget {
           children: [
             _buildStatsOverview(card, border, text, muted),
             const SizedBox(height: 28),
-            _buildFilters(chipBg, chipInactive, text),
+            _buildFilters(context, chipBg, chipInactive, text),
             const SizedBox(height: 24),
             Text(
               "Request History",
@@ -38,6 +71,7 @@ class RequestHistoryScreen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             _buildTimelineItem(
+              context: context,
               icon: Icons.cleaning_services,
               iconColor: accent,
               title: "Eco-Industrial Desludging",
@@ -58,6 +92,7 @@ class RequestHistoryScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             _buildTimelineItem(
+              context: context,
               icon: Icons.block,
               iconColor: const Color(0xFFBA1A1A),
               title: "Emergency Pipe Check",
@@ -75,6 +110,7 @@ class RequestHistoryScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             _buildTimelineItem(
+              context: context,
               icon: Icons.history,
               iconColor: muted,
               title: "Routine Tank Drainage",
@@ -95,7 +131,7 @@ class RequestHistoryScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(context, isDark, card),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
@@ -110,15 +146,16 @@ class RequestHistoryScreen extends StatelessWidget {
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: isDark ? accent : const Color(0xFF003D1A)),
+        icon: Icon(
+          Icons.arrow_back,
+          color: isDark ? accent : const Color(0xFF003D1A),
+        ),
         onPressed: () => Navigator.pop(context),
       ),
       title: Row(
         children: [
-          Icon(Icons.eco, color: isDark ? accent : const Color(0xFF003D1A), size: 26),
-          const SizedBox(width: 8),
           Text(
-            "Request History",
+            "Tasks",
             style: TextStyle(
               fontWeight: FontWeight.bold,
               color: isDark ? accent : const Color(0xFF003D1A),
@@ -129,21 +166,13 @@ class RequestHistoryScreen extends StatelessWidget {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.search, color: isDark ? accent : const Color(0xFF003D1A)),
-          onPressed: () {},
-        ),
-        IconButton(
-          icon: Icon(Icons.tune, color: isDark ? accent : const Color(0xFF003D1A)),
-          onPressed: () {},
-        ),
-        const Padding(
-          padding: EdgeInsets.only(right: 12),
-          child: CircleAvatar(
-            radius: 17,
-            backgroundImage: NetworkImage(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuCOQj0NSMnWaawOJ_dI4HPUSvtHaokihmiJUepNf-W4vzRow47jZAxxMg9PjY2E1UPZduFMAcJcz917N-uZ4NSpGbzPubkjz04JY6-69DIq1Gx2OWHA-VKDok6-GTmk4hcQwMhq0F-z-cyTmq0-aoXUMmUTj6lxswu3Cf2_4ASZj1mBqFAdij5_i_remkNyE0OlUDjxqCPIeMtwlPJaUzabt5BT1_9JkoT7lr5cT6Q55Lg2Y8ByX7cu86DHo4SidJHeiU7cU2jf-95c',
-            ),
+          tooltip: 'Filter tasks',
+          icon: Icon(
+            Icons.tune,
+            color: isDark ? accent : const Color(0xFF003D1A),
           ),
+          onPressed: () =>
+              showTaskStatusFilter(context, currentStatus: 'Completed'),
         ),
       ],
     );
@@ -246,10 +275,7 @@ class RequestHistoryScreen extends StatelessWidget {
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "IMPACT",
-            style: TextStyle(fontSize: 11, color: Colors.white70),
-          ),
+          Text("IMPACT", style: TextStyle(fontSize: 11, color: Colors.white70)),
           SizedBox(height: 8),
           Text(
             "120 kg",
@@ -268,7 +294,12 @@ class RequestHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilters(Color chipBg, Color chipInactive, Color text) {
+  Widget _buildFilters(
+    BuildContext context,
+    Color chipBg,
+    Color chipInactive,
+    Color text,
+  ) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -295,15 +326,16 @@ class RequestHistoryScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          _filterChip("This Year", true, chipInactive, text),
+          _filterChip(context, "This Year", true, chipInactive, text),
           const SizedBox(width: 8),
-          _filterChip("Sort by Date", false, chipInactive, text),
+          _filterChip(context, "Sort by Date", false, chipInactive, text),
         ],
       ),
     );
   }
 
   Widget _filterChip(
+    BuildContext context,
     String label,
     bool active,
     Color chipInactive,
@@ -312,7 +344,7 @@ class RequestHistoryScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF94F4AD) : chipInactive,
+        color: active ? context.appAccent : chipInactive,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
@@ -320,13 +352,14 @@ class RequestHistoryScreen extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.w600,
           fontSize: 13,
-          color: active ? const Color(0xFF003D1A) : text,
+          color: active ? context.appOnAccent : text,
         ),
       ),
     );
   }
 
   Widget _buildTimelineItem({
+    required BuildContext context,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -463,12 +496,24 @@ class RequestHistoryScreen extends StatelessWidget {
                     children: [
                       if (duration != null)
                         Expanded(
-                          child: _infoBox("Duration", duration, infoBox, text, muted),
+                          child: _infoBox(
+                            "Duration",
+                            duration,
+                            infoBox,
+                            text,
+                            muted,
+                          ),
                         ),
                       if (volume != null) ...[
                         const SizedBox(width: 10),
                         Expanded(
-                          child: _infoBox("Volume", volume, infoBox, text, muted),
+                          child: _infoBox(
+                            "Volume",
+                            volume,
+                            infoBox,
+                            text,
+                            muted,
+                          ),
                         ),
                       ],
                     ],
@@ -492,12 +537,26 @@ class RequestHistoryScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () => showDialog<void>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            title: const Text('Service Report'),
+                            content: Text(
+                              '$title\n$id\nDate: $date\nStatus: $status',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF003D1A),
-                          foregroundColor: Colors.white,
+                          backgroundColor: context.appAccent,
+                          foregroundColor: context.appOnAccent,
                           elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -511,11 +570,17 @@ class RequestHistoryScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => _saveReport(
+                          context,
+                          id: id,
+                          title: title,
+                          date: date,
+                          status: status,
+                        ),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: text,
-                          side: BorderSide(color: border),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          foregroundColor: context.appAccent,
+                          side: BorderSide(color: context.appBorder),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -524,7 +589,7 @@ class RequestHistoryScreen extends StatelessWidget {
                           "Download",
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
-                            color: text,
+                          color: context.appAccent,
                           ),
                         ),
                       ),
@@ -571,105 +636,7 @@ class RequestHistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNav(BuildContext context, bool isDark, Color card) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: isDark ? card : Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(
-            icon: Icons.home_outlined,
-            label: "Home",
-            onTap: () {
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                '/home',
-                (route) => false,
-              );
-            },
-          ),
-          _NavItem(
-            icon: Icons.add_circle_outline,
-            label: "Request",
-            onTap: () {
-              Navigator.pushNamed(context, '/schedule-service');
-            },
-          ),
-          // Tasks active — History is under Tasks
-          const _NavItem(
-            icon: Icons.assignment,
-            label: "Tasks",
-            active: true,
-          ),
-          _NavItem(
-            icon: Icons.notifications_outlined,
-            label: "Alerts",
-            onTap: () {
-              Navigator.pushNamed(context, '/messages');
-            },
-          ),
-          _NavItem(
-            icon: Icons.person_outline,
-            label: "Profile",
-            onTap: () {
-              Navigator.pushNamed(context, '/profile');
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-  final VoidCallback? onTap;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final color = active
-        ? (isDark ? const Color(0xFF94F4AD) : const Color(0xFF006D38))
-        : (isDark ? const Color(0xFF9AA39A) : const Color(0xFF707970));
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 3),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              color: color,
-              fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ),
-        ],
-      ),
-    );
+  Widget _buildBottomNav() {
+    return const AppBottomNav(currentIndex: 2);
   }
 }

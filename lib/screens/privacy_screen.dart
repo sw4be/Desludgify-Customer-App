@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../widgets/app_brand_logo.dart';
+import 'theme_colors.dart';
 
 class PrivacyScreen extends StatefulWidget {
   const PrivacyScreen({super.key});
@@ -48,9 +50,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     await p.setBool('privacy_online', _showOnlineStatus);
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Privacy settings saved')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Privacy settings saved')));
     Navigator.pop(context);
   }
 
@@ -107,12 +109,12 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0F1410) : const Color(0xFFF8FAF3);
-    final card = isDark ? const Color(0xFF1A211C) : Colors.white;
-    final text = isDark ? const Color(0xFFE8EBE6) : const Color(0xFF003D1A);
-    final muted = isDark ? const Color(0xFF9AA39A) : const Color(0xFF707970);
-    final border = isDark ? const Color(0xFF2A332C) : const Color(0xFFE8EBE6);
-    final accent = isDark ? const Color(0xFF94F4AD) : const Color(0xFF006D38);
+    final bg = isDark ? const Color(0xFF08090A) : const Color(0xFFF8FAF3);
+    final card = isDark ? const Color(0xFF17181C) : Colors.white;
+    final text = isDark ? const Color(0xFFF5F6F7) : const Color(0xFF003D1A);
+    final muted = isDark ? const Color(0xFFB0B4BC) : const Color(0xFF707970);
+    final border = isDark ? const Color(0xFF3A3D44) : const Color(0xFFE8EBE6);
+    final accent = isDark ? const Color(0xFFE8EAED) : const Color(0xFF006D38);
 
     if (_loading) {
       return Scaffold(
@@ -124,7 +126,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: isDark ? const Color(0xFF1A211C) : Colors.white,
+        backgroundColor: isDark ? const Color(0xFF08090A) : Colors.white,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
@@ -134,13 +136,19 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Privacy',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: isDark ? accent : const Color(0xFF003D1A),
-            fontSize: 18,
-          ),
+        title: Row(
+          children: [
+            const AppBrandLogo(size: 26),
+            const SizedBox(width: 8),
+            Text(
+              'Privacy',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDark ? accent : const Color(0xFF003D1A),
+                fontSize: 18,
+              ),
+            ),
+          ],
         ),
       ),
       body: SingleChildScrollView(
@@ -290,8 +298,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               border,
               children: [
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   leading: Icon(Icons.description_outlined, color: muted),
                   title: Text(
                     'Privacy Policy',
@@ -308,8 +318,10 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
                 ),
                 _divider(border),
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   leading: Icon(Icons.gavel_outlined, color: muted),
                   title: Text(
                     'Terms of Service',
@@ -334,8 +346,8 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
               child: ElevatedButton(
                 onPressed: _saveSettings,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003D1A),
-                  foregroundColor: Colors.white,
+                  backgroundColor: context.appAccent,
+                  foregroundColor: context.appOnAccent,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -366,9 +378,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
         title: Text('Delete account?', style: TextStyle(color: text)),
         content: Text(
           'This cannot be undone. All requests and profile data will be removed.',
-          style: TextStyle(
-            color: isDark ? const Color(0xFF9AA39A) : null,
-          ),
+          style: TextStyle(color: isDark ? const Color(0xFF9AA39A) : null),
         ),
         actions: [
           TextButton(
@@ -379,9 +389,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
             onPressed: () {
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Account deletion is demo-only'),
-                ),
+                const SnackBar(content: Text('Account deletion is demo-only')),
               );
             },
             child: const Text(
@@ -471,10 +479,6 @@ class _PrivacyScreenState extends State<PrivacyScreen> {
     );
   }
 
-  Widget _divider(Color border) => Divider(
-        height: 1,
-        indent: 16,
-        endIndent: 16,
-        color: border,
-      );
+  Widget _divider(Color border) =>
+      Divider(height: 1, indent: 16, endIndent: 16, color: border);
 }

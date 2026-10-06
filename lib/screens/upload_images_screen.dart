@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'theme_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'verification_notification_screen.dart';
+import '../widgets/app_brand_logo.dart';
 
 class UploadImagesScreen extends StatefulWidget {
   const UploadImagesScreen({super.key});
@@ -29,12 +32,12 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF006D38)),
+                leading: Icon(Icons.photo_library, color: context.appAccent),
                 title: const Text('Choose from Gallery'),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF006D38)),
+                leading: Icon(Icons.camera_alt, color: context.appAccent),
                 title: const Text('Take a Photo'),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
@@ -64,20 +67,20 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF8FAF3),
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        leading: const Padding(
+        leading: Padding(
           padding: EdgeInsets.only(left: 12),
-          child: Icon(Icons.eco, color: Color(0xFF003D1A), size: 28),
+          child: const AppBrandLogo(size: 28),
         ),
-        title: const Text(
-          'Desludgify',
+        title: Text(
+          'Deslugify',
           style: TextStyle(
             fontWeight: FontWeight.bold,
-            color: Color(0xFF003D1A),
+            color: context.appText,
             fontSize: 18,
           ),
         ),
@@ -89,45 +92,57 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Upload Required Images',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF003D1A),
+                color: context.appText,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Please upload 3 clear images to help us properly assess your issue. All images are required before submission.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF707970), height: 1.4),
+              style: TextStyle(
+                fontSize: 14,
+                color: context.appMutedText,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 24),
 
-            _imageSlot(0, 'IMAGE 1: OVERVIEW'),
+            _imageSlot(context, 0, 'IMAGE 1: OVERVIEW'),
             const SizedBox(height: 16),
-            _imageSlot(1, 'IMAGE 2: CLOSE-UP VIEW'),
+            _imageSlot(context, 1, 'IMAGE 2: CLOSE-UP VIEW'),
             const SizedBox(height: 16),
-            _imageSlot(2, 'IMAGE 3: ADDITIONAL ANGLE'),
+            _imageSlot(context, 2, 'IMAGE 3: ADDITIONAL ANGLE'),
             const SizedBox(height: 20),
 
             if (!_allUploaded)
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0EF),
+                  color: context.appErrorContainer,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFFDAD6)),
+                  border: Border.all(color: context.appErrorBorder),
                 ),
-                child: const Row(
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.error_outline, color: Color(0xFFBA1A1A), size: 20),
+                    Icon(
+                      Icons.error_outline,
+                      color: context.appError,
+                      size: 20,
+                    ),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         'Please upload all required images before proceeding. Our AI verification system needs these to validate your service request.',
-                        style: TextStyle(fontSize: 13, color: Color(0xFFBA1A1A), height: 1.35),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: context.appError,
+                          height: 1.35,
+                        ),
                       ),
                     ),
                   ],
@@ -141,7 +156,13 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
               child: ElevatedButton.icon(
                 onPressed: _allUploaded
                     ? () {
-                        Navigator.pushNamed(context, '/ai-verification');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const VerificationNotificationScreen(),
+                          ),
+                        );
                       }
                     : null,
                 icon: const Icon(Icons.auto_awesome, size: 20),
@@ -150,10 +171,10 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
                   style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF003D1A),
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: const Color(0xFFC0C9BE),
-                  disabledForegroundColor: Colors.white,
+                  backgroundColor: context.appAccent,
+                  foregroundColor: context.appOnAccent,
+                  disabledBackgroundColor: context.appSurfaceContainer,
+                  disabledForegroundColor: context.appMutedText,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -162,10 +183,10 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Center(
+            Center(
               child: Text(
                 'Step 2 of 4 · Photo Documentation',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9AA39A)),
+                style: TextStyle(fontSize: 12, color: context.appMutedText),
               ),
             ),
           ],
@@ -174,20 +195,19 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
     );
   }
 
-  Widget _imageSlot(int index, String title) {
+  Widget _imageSlot(BuildContext context, int index, String title) {
     final completed = _images[index] != null;
     final badge = completed ? 'COMPLETED' : 'REQUIRED';
-    final badgeColor =
-        completed ? const Color(0xFF006D38) : const Color(0xFFBA1A1A);
+    final badgeColor = completed ? context.appAccent : context.appError;
 
     return GestureDetector(
       onTap: () => _onUploadTap(index),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.appSurface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: completed ? const Color(0xFF94F4AD) : const Color(0xFFE1E3DD),
+            color: completed ? const Color(0xFF94F4AD) : context.appBorder,
             width: completed ? 1.5 : 1,
           ),
         ),
@@ -200,15 +220,18 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF707970),
+                    color: context.appMutedText,
                     letterSpacing: 0.3,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
@@ -242,27 +265,34 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
                 height: 120,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2F5EE),
+                  color: context.appSurfaceContainer,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFC0C9BE)),
+                  border: Border.all(color: context.appBorder),
                 ),
-                child: const Column(
+                child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.camera_alt_outlined, size: 32, color: Color(0xFF707970)),
+                    Icon(
+                      Icons.camera_alt_outlined,
+                      size: 32,
+                      color: context.appMutedText,
+                    ),
                     SizedBox(height: 8),
                     Text(
                       'Capture or Upload',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF003D1A),
+                        color: context.appText,
                         fontSize: 14,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Max size 10MB · JPG, PNG',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF9AA39A)),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.appMutedText,
+                      ),
                     ),
                   ],
                 ),
@@ -272,7 +302,7 @@ class _UploadImagesScreenState extends State<UploadImagesScreen> {
               const SizedBox(height: 8),
               Text(
                 _fileNames[index]!,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF707970)),
+                style: TextStyle(fontSize: 12, color: context.appMutedText),
               ),
             ],
           ],

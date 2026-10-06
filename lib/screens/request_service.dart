@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_bottom_nav.dart';
+import 'theme_colors.dart';
+import 'native_dialer.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -6,7 +9,7 @@ class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
@@ -14,7 +17,7 @@ class DashboardScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Search & Filters
-            _buildSearchAndFilters(),
+            _buildSearchAndFilters(context),
             const SizedBox(height: 28),
 
             // Active Tracking
@@ -22,42 +25,35 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 28),
 
             // Recent Requests
-            _buildRecentRequests(),
+            _buildRecentRequests(context),
           ],
         ),
       ),
-      floatingActionButton: _buildFAB(),
+      floatingActionButton: _buildFAB(context),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white.withValues(alpha: 0.95),
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       title: Row(
         children: [
-          Image.network(
-            'https://lh3.googleusercontent.com/aida/ADBb0uh_XxMS61KUaVNacue5FobV3T-qBgQZATqr4_2LBF35Ax6IoeUPI5kQqj2zIOcMcTmVAoibrf2r8PbVjXS1yhUMwtcIMjFKQUnmRJXa-2kHSmcnmg23Sx9gI31Vp4sD1qijatJaqkk9lGourj33P-ajkOc2NkWSBbPGwNsDFxPUSU0PmY7qRLgYZq4vBSop3JQRRqf80CgNsBL8c0zTV5sr0U2HYFQV6aDkVRGfRfV1XZZwbAf_6Cm_JTFKl21JL8qxex7C9_fGPA8',
-            height: 30,
-            errorBuilder: (_, _, _) =>
-                const Icon(Icons.eco, color: Color(0xFF003D1A), size: 28),
-          ),
-          const SizedBox(width: 10),
-          const Text(
-            "Deslugify",
+          Text(
+            'Deslugify',
             style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF003D1A),
               fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: context.appText,
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.search, color: Color(0xFF003D1A)),
+          icon: Icon(Icons.search, color: context.appText),
           onPressed: () {},
         ),
         const Padding(
@@ -73,20 +69,20 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchAndFilters() {
+  Widget _buildSearchAndFilters(BuildContext context) {
     return Column(
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE1E3DD)),
+            border: Border.all(color: context.appBorder),
           ),
-          child: const TextField(
+          child: TextField(
             decoration: InputDecoration(
               hintText: "Search requests...",
-              hintStyle: TextStyle(color: Color(0xFF707970)),
-              prefixIcon: Icon(Icons.search, color: Color(0xFF707970)),
+              hintStyle: TextStyle(color: context.appMutedText),
+              prefixIcon: Icon(Icons.search, color: context.appMutedText),
               border: InputBorder.none,
               contentPadding: EdgeInsets.symmetric(vertical: 14),
             ),
@@ -97,11 +93,11 @@ class DashboardScreen extends StatelessWidget {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              _filterChip("All Tasks", true),
-              _filterChip("Pending", false),
-              _filterChip("Ongoing", false),
-              _filterChip("Completed", false),
-              _filterChip("Filters", false, icon: Icons.filter_list),
+              _filterChip(context, "All Tasks", true),
+              _filterChip(context, "Pending", false),
+              _filterChip(context, "Ongoing", false),
+              _filterChip(context, "Completed", false),
+              _filterChip(context, "Filters", false, icon: Icons.filter_list),
             ],
           ),
         ),
@@ -109,7 +105,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _filterChip(String label, bool active, {IconData? icon}) {
+  Widget _filterChip(
+    BuildContext context,
+    String label,
+    bool active, {
+    IconData? icon,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: FilterChip(
@@ -119,17 +120,21 @@ class DashboardScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: active ? Colors.white : const Color(0xFF191D19)),
+              Icon(
+                icon,
+                size: 16,
+                color: active ? context.appOnAccent : context.appText,
+              ),
               const SizedBox(width: 4),
             ],
             Text(label),
           ],
         ),
         onSelected: (_) {},
-        backgroundColor: const Color(0xFFE6E9E2),
-        selectedColor: const Color(0xFF003D1A),
+        backgroundColor: context.appSurfaceContainer,
+        selectedColor: context.appAccent,
         labelStyle: TextStyle(
-          color: active ? Colors.white : const Color(0xFF191D19),
+          color: active ? context.appOnAccent : context.appText,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -142,9 +147,9 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -159,30 +164,34 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Active Tracking",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF003D1A),
+                  color: context.appText,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF94F4AD),
+                  color: context.appAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.circle, size: 8, color: Color(0xFF006D38)),
+                    Icon(Icons.circle, size: 8, color: context.appAccent),
                     SizedBox(width: 6),
                     Text(
                       "Live Update",
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
+                        color: context.appAccent,
                       ),
                     ),
                   ],
@@ -191,7 +200,7 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: Column(
@@ -202,14 +211,14 @@ class DashboardScreen extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF003D1A),
+                        color: context.appText,
                       ),
                     ),
                     SizedBox(height: 2),
                     Text(
                       "Industrial Waste Collection - Sector 7",
                       style: TextStyle(
-                        color: Color(0xFF707970),
+                        color: context.appMutedText,
                         fontSize: 13,
                       ),
                     ),
@@ -221,14 +230,14 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     "Estimated Arrival",
-                    style: TextStyle(fontSize: 11, color: Color(0xFF707970)),
+                    style: TextStyle(fontSize: 11, color: context.appMutedText),
                   ),
                   Text(
                     "14 mins",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF006D38),
+                      color: context.appAccent,
                     ),
                   ),
                 ],
@@ -236,36 +245,42 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildTimeline(),
+          _buildTimeline(context),
           const SizedBox(height: 18),
-          _buildTechnicianInfo(),
+          _buildTechnicianInfo(context),
         ],
       ),
     );
   }
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        _timelineDot("Request", Icons.check, true),
-        _timelineDot("Assigned", Icons.person_search, true),
-        _timelineDot("En Route", Icons.local_shipping, true),
-        _timelineDot("Complete", Icons.inventory_2, false),
+        _timelineDot(context, "Request", Icons.check, true),
+        _timelineDot(context, "Assigned", Icons.person_search, true),
+        _timelineDot(context, "En Route", Icons.local_shipping, true),
+        _timelineDot(context, "Complete", Icons.inventory_2, false),
       ],
     );
   }
 
-  Widget _timelineDot(String label, IconData icon, bool active) {
+  Widget _timelineDot(
+    BuildContext context,
+    String label,
+    IconData icon,
+    bool active,
+  ) {
     return Column(
       children: [
         CircleAvatar(
           radius: 17,
-          backgroundColor:
-              active ? const Color(0xFF006D38) : const Color(0xFFE1E3DD),
+          backgroundColor: active
+              ? context.appAccent
+              : context.appSurfaceContainer,
           child: Icon(
             icon,
-            color: active ? Colors.white : const Color(0xFF707970),
+            color: active ? context.appOnAccent : context.appMutedText,
             size: 16,
           ),
         ),
@@ -275,18 +290,18 @@ class DashboardScreen extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: active ? const Color(0xFF003D1A) : const Color(0xFF707970),
+            color: active ? context.appText : context.appMutedText,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTechnicianInfo() {
+  Widget _buildTechnicianInfo(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F5EE),
+        color: context.appSurfaceContainer,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -298,7 +313,7 @@ class DashboardScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -306,40 +321,40 @@ class DashboardScreen extends StatelessWidget {
                   "Marcus Chen",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF003D1A),
+                    color: context.appText,
                   ),
                 ),
                 SizedBox(height: 2),
                 Text(
                   "Lead Technician • 4.9 ★",
-                  style: TextStyle(fontSize: 12, color: Color(0xFF707970)),
+                  style: TextStyle(fontSize: 12, color: context.appMutedText),
                 ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.call, color: Color(0xFF006D38)),
-            onPressed: () {},
+            icon: Icon(Icons.call, color: context.appAccent),
+            onPressed: () => openNativeDialer(context, phoneNumber: null),
           ),
           IconButton(
-            icon: const Icon(Icons.chat, color: Color(0xFF006D38)),
-            onPressed: () {},
+            icon: Icon(Icons.chat, color: context.appAccent),
+            onPressed: () => Navigator.pushNamed(context, '/messages'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentRequests() {
+  Widget _buildRecentRequests(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Recent Requests",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF003D1A),
+            color: context.appText,
           ),
         ),
         const SizedBox(height: 14),
@@ -347,6 +362,7 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _requestCard(
+                context,
                 "Water Quality Check",
                 "Zone B",
                 "Completed",
@@ -357,6 +373,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _requestCard(
+                context,
                 "Air Filtration Service",
                 "Central Plaza",
                 "Pending",
@@ -371,6 +388,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _requestCard(
+    BuildContext context,
     String title,
     String location,
     String status,
@@ -380,9 +398,9 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,89 +426,33 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF003D1A),
+              color: context.appText,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             location,
-            style: const TextStyle(color: Color(0xFF707970), fontSize: 13),
+            style: TextStyle(color: context.appMutedText, fontSize: 13),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFAB() {
+  Widget _buildFAB(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {},
-      backgroundColor: const Color(0xFF003D1A),
-      foregroundColor: Colors.white,
+      backgroundColor: context.appAccent,
+      foregroundColor: context.appOnAccent,
       elevation: 4,
       child: const Icon(Icons.add, size: 28),
     );
   }
 
   Widget _buildBottomNav() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 16,
-          ),
-        ],
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _NavItem(icon: Icons.home, label: "Home", active: true),
-          _NavItem(icon: Icons.add_circle_outline, label: "Request"),
-          _NavItem(icon: Icons.assignment_outlined, label: "Tasks"),
-          _NavItem(icon: Icons.notifications_outlined, label: "Alerts"),
-          _NavItem(icon: Icons.person_outline, label: "Profile"),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool active;
-
-  const _NavItem({
-    required this.icon,
-    required this.label,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? const Color(0xFF006D38) : const Color(0xFF707970);
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: color, size: 24),
-        const SizedBox(height: 3),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: color,
-            fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-          ),
-        ),
-      ],
-    );
+    return const AppBottomNav(currentIndex: 0);
   }
 }

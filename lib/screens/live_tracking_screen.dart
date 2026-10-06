@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'live_map_widget.dart';
+import 'native_dialer.dart';
+import 'theme_colors.dart';
 
 class LiveTrackingScreen extends StatelessWidget {
   const LiveTrackingScreen({super.key});
@@ -7,7 +9,7 @@ class LiveTrackingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -15,21 +17,21 @@ class LiveTrackingScreen extends StatelessWidget {
             Container(
               height: 56,
               padding: const EdgeInsets.symmetric(horizontal: 4),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF003D1A)),
+                    icon: Icon(Icons.arrow_back, color: context.appText),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Live Tracking',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF003D1A),
+                        color: context.appText,
                       ),
                     ),
                   ),
@@ -39,29 +41,30 @@ class LiveTrackingScreen extends StatelessWidget {
             ),
 
             // MAP fills remaining space above bottom card
-            const Expanded(
-              child: LiveMapWidget(),
-            ),
+            const Expanded(child: LiveMapWidget()),
 
             // ETA strip
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 10),
-              color: Colors.white,
-              child: const Row(
+              color: Theme.of(context).colorScheme.surface,
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.schedule, color: Color(0xFF006D38), size: 20),
+                  Icon(Icons.schedule, color: context.appAccent, size: 20),
                   SizedBox(width: 6),
                   Text(
                     '12 mins',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFF006D38),
+                      color: context.appAccent,
                     ),
                   ),
                   SizedBox(width: 16),
-                  Text('•  2.4 km', style: TextStyle(color: Colors.grey)),
+                  Text(
+                    '•  2.4 km',
+                    style: TextStyle(color: context.appMutedText),
+                  ),
                 ],
               ),
             ),
@@ -70,22 +73,27 @@ class LiveTrackingScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.surface,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Row(
+                  Row(
                     children: [
                       Text(
                         'En Route',
                         style: TextStyle(
-                          color: Color(0xFF006D38),
+                          color: context.appAccent,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Spacer(),
-                      Text('Step 2 of 4',
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text(
+                        'Step 2 of 4',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.appMutedText,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -101,14 +109,13 @@ class LiveTrackingScreen extends StatelessWidget {
                           errorBuilder: (_, _, _) => Container(
                             width: 52,
                             height: 52,
-                            color: const Color(0xFFE1E3DD),
-                            child: const Icon(Icons.person,
-                                color: Color(0xFF006D38)),
+                            color: context.appSurfaceContainer,
+                            child: Icon(Icons.person, color: context.appAccent),
                           ),
                         ),
                       ),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -116,14 +123,14 @@ class LiveTrackingScreen extends StatelessWidget {
                               'Marcus Chen',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF003D1A),
+                                color: context.appText,
                               ),
                             ),
                             Text(
                               'Lead Technician · 4.9★',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF707970),
+                                color: context.appMutedText,
                               ),
                             ),
                           ],
@@ -137,12 +144,12 @@ class LiveTrackingScreen extends StatelessWidget {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () =>
-                              Navigator.pushNamed(context, '/live-call'),
+                              openNativeDialer(context, phoneNumber: null),
                           icon: const Icon(Icons.call, size: 18),
                           label: const Text('Call'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF003D1A),
-                            foregroundColor: Colors.white,
+                            backgroundColor: context.appAccent,
+                            foregroundColor: context.appOnAccent,
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -158,8 +165,8 @@ class LiveTrackingScreen extends StatelessWidget {
                           icon: const Icon(Icons.chat, size: 18),
                           label: const Text('Message'),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF003D1A),
-                            side: const BorderSide(color: Color(0xFF003D1A)),
+                            foregroundColor: context.appAccent,
+                            side: BorderSide(color: context.appAccent),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

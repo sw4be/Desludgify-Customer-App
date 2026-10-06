@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'theme_colors.dart';
+import '../widgets/app_brand_logo.dart';
 
 class LiveCallScreen extends StatefulWidget {
   const LiveCallScreen({super.key});
@@ -29,7 +31,7 @@ class _LiveCallScreenState extends State<LiveCallScreen>
       vsync: this,
       duration: const Duration(seconds: 3),
     )..repeat();
-    
+
     _pulseAnimation = CurvedAnimation(
       parent: _pulseController,
       curve: Curves.easeOut,
@@ -58,8 +60,8 @@ class _LiveCallScreenState extends State<LiveCallScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
-      appBar: _buildAppBar(),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: _buildAppBar(context),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -83,15 +85,18 @@ class _LiveCallScreenState extends State<LiveCallScreen>
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
+  PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white.withValues(alpha: 0.85),
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
-      title: const Row(
+      title: Row(
         children: [
-          Icon(Icons.eco, color: Color(0xFF003D1A), size: 28),
-          SizedBox(width: 8),
-          Text("Deslugify", style: TextStyle(fontWeight: FontWeight.bold)),
+          const AppBrandLogo(size: 32),
+          const SizedBox(width: 8),
+          const Text(
+            'Deslugify',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
       actions: [
@@ -99,7 +104,7 @@ class _LiveCallScreenState extends State<LiveCallScreen>
           icon: const Icon(Icons.settings),
           onPressed: () {},
           tooltip: 'Settings',
-        )
+        ),
       ],
     );
   }
@@ -125,11 +130,11 @@ class _LiveCallScreenState extends State<LiveCallScreen>
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               "IN CALL",
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF006D38),
+                color: context.appAccent,
                 letterSpacing: 2,
               ),
             ),
@@ -138,15 +143,15 @@ class _LiveCallScreenState extends State<LiveCallScreen>
         const SizedBox(height: 8),
         Text(
           _formattedTime,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 48,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF003D1A),
+            color: context.appText,
           ),
         ),
-        const Text(
+        Text(
           "Sipsip Poso Negro Service Call",
-          style: TextStyle(fontSize: 16, color: Color(0xFF707970)),
+          style: TextStyle(fontSize: 16, color: context.appMutedText),
         ),
       ],
     );
@@ -186,11 +191,8 @@ class _LiveCallScreenState extends State<LiveCallScreen>
                 child: Image.network(
                   'https://lh3.googleusercontent.com/aida-public/AB6AXuCC87b4fL-QHRge9ejjOYqJVXkXIxl6ZwWTHVk9DZODcxOvG4VXMvaP89Qpv3bPRF4s3L0uT2xzPQGI6C9oVJHboCl9V_hJXfFpih3-F0_ozbgmRv2gTVqGi3U5kStPOK92hTH7P1j3pbaXvuP9t8ZEBhlhBB5IldrK2yU9_N1_X--f6Nb-raYpJvcBoc0O4pVJ7ZWfZJ5DjU_nNS4qXEPdsqP43BSquWmAfBGUi_BAIS32A9mZZQltsr9sUY7_MFRbAZOEZKnCo5r1',
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => const Icon(
-                    Icons.person,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
+                  errorBuilder: (context, error, stackTrace) =>
+                      Icon(Icons.person, size: 80, color: context.appMutedText),
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return const CircularProgressIndicator();
@@ -205,10 +207,10 @@ class _LiveCallScreenState extends State<LiveCallScreen>
           "Marcus Thorne",
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
         ),
-        const Text(
+        Text(
           "Lead Technician • SR-2026-001",
           style: TextStyle(
-            color: Color(0xFF006D38),
+            color: context.appAccent,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -269,7 +271,7 @@ class _LiveCallScreenState extends State<LiveCallScreen>
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.85),
+        color: context.appSurface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 20),
@@ -283,12 +285,12 @@ class _LiveCallScreenState extends State<LiveCallScreen>
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: context.appBorder,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             children: [
               Expanded(
                 child: Column(
@@ -297,7 +299,7 @@ class _LiveCallScreenState extends State<LiveCallScreen>
                     Text("Status", style: TextStyle(fontSize: 13)),
                     Row(
                       children: [
-                        Icon(Icons.circle, size: 10, color: Color(0xFF006D38)),
+                        Icon(Icons.circle, size: 10, color: context.appAccent),
                         SizedBox(width: 6),
                         Text(
                           "In Progress",
@@ -317,7 +319,7 @@ class _LiveCallScreenState extends State<LiveCallScreen>
                       "Arrived",
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF006D38),
+                        color: context.appAccent,
                       ),
                     ),
                   ],
@@ -326,9 +328,9 @@ class _LiveCallScreenState extends State<LiveCallScreen>
             ],
           ),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.location_on, color: Color(0xFF006D38)),
+              Icon(Icons.location_on, color: context.appAccent),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -377,23 +379,21 @@ class _CallControlButton extends StatelessWidget {
               height: 64,
               decoration: BoxDecoration(
                 color: isActive
-                    ? const Color(0xFF94F4AD).withValues(alpha: 0.3)
-                    : Colors.white.withValues(alpha: 0.7),
+                    ? context.appAccent.withValues(alpha: 0.15)
+                    : context.appSurface,
                 borderRadius: BorderRadius.circular(20),
                 border: isActive
-                    ? Border.all(color: const Color(0xFF94F4AD), width: 2)
+                    ? Border.all(color: context.appAccent, width: 2)
                     : null,
               ),
               child: Icon(
                 icon,
                 size: 32,
-                color: isActive
-                    ? const Color(0xFF006D38)
-                    : const Color(0xFF003D1A),
+                color: isActive ? context.appAccent : context.appText,
               ),
             ),
             const SizedBox(height: 8),
-            Text(label, style: const TextStyle(fontSize: 13)),
+            Text(label, style: TextStyle(fontSize: 13, color: context.appText)),
           ],
         ),
       ),

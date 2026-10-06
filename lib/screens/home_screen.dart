@@ -1,34 +1,47 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
 
-class DashboardScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import '../widgets/app_bottom_nav.dart';
+import 'auth_store.dart';
+import 'native_dialer.dart';
+import 'theme_colors.dart';
+
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late final Future<AppUser?> _currentUser = AuthStore.currentUser();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAF3),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: _buildAppBar(context),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSearchBar(),
+            _buildSearchBar(context),
             const SizedBox(height: 16),
             _buildFilters(context),
             const SizedBox(height: 28),
             _buildActiveTracking(context),
             const SizedBox(height: 28),
-            const Text(
+            Text(
               "Recent Requests",
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF003D1A),
+                color: context.appText,
               ),
             ),
             const SizedBox(height: 16),
-            _buildRecentRequests(),
+            _buildRecentRequests(context),
             const SizedBox(height: 24),
           ],
         ),
@@ -40,59 +53,63 @@ class DashboardScreen extends StatelessWidget {
 
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
       automaticallyImplyLeading: false,
       title: Row(
         children: [
-          Image.network(
-            'https://lh3.googleusercontent.com/aida/ADBb0uh_XxMS61KUaVNacue5FobV3T-qBgQZATqr4_2LBF35Ax6IoeUPI5kQqj2zIOcMcTmVAoibrf2r8PbVjXS1yhUMwtcIMjFKQUnmRJXa-2kHSmcnmg23Sx9gI31Vp4sD1qijatJaqkk9lGourj33P-ajkOc2NkWSBbPGwNsDFxPUSU0PmY7qRLgYZq4vBSop3JQRRqf80CgNsBL8c0zTV5sr0U2HYFQV6aDkVRGfRfV1XZZwbAf_6Cm_JTFKl21JL8qxex7C9_fGPA8',
-            height: 32,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.eco, size: 32, color: Color(0xFF003D1A)),
-          ),
-          const SizedBox(width: 8),
-          const Text(
-            "Deslugify",
+          Text(
+            'Home',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF003D1A),
+              color: context.appAccent,
             ),
           ),
         ],
       ),
       actions: [
         IconButton(
-          icon: const Icon(Icons.search, color: Color(0xFF707970)),
-          onPressed: () {},
+          icon: Icon(Icons.chat_bubble_outline, color: context.appMutedText),
+          tooltip: 'Messages',
+          onPressed: () => Navigator.pushNamed(context, '/messages'),
         ),
-        const Padding(
-          padding: EdgeInsets.only(right: 16),
-          child: CircleAvatar(
-            radius: 18,
-            backgroundImage: NetworkImage(
-              'https://lh3.googleusercontent.com/aida-public/AB6AXuBrDiNizbkcLGMD2f2zerqt9KeqijC4Z5uPmaI3akKXHo1L3mhjtJQNxQx6FuJabXSYftmYP7Ot0S7TGd8toLFBX1v0SKqptmHnhpP02VrLpCrb183IiWWJQgnS9aNNV7IdykThpiXVVLIWUXrns-k4fOIJmI0zTE1MVnM2XNk9FTHpBM-KJYgyYaNYjN6H878RGtACQ7ZzLeJqFldbFqVMWaB0zgADGxlzkz0dqhk4qWTz7pwImqbrDmS7jAoNosfc8F-0J0T-2ll6',
-            ),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: FutureBuilder<AppUser?>(
+            future: _currentUser,
+            builder: (context, snapshot) {
+              final path = snapshot.data?.profileImagePath;
+              final imageFile = path == null ? null : File(path);
+              final hasImage = imageFile?.existsSync() ?? false;
+              return CircleAvatar(
+                radius: 18,
+                backgroundColor: context.appSurfaceContainer,
+                backgroundImage: hasImage ? FileImage(imageFile!) : null,
+                child: hasImage
+                    ? null
+                    : Icon(Icons.person, size: 19, color: context.appMutedText),
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(BuildContext context) {
     return Container(
       height: 52,
       decoration: BoxDecoration(
-        color: const Color(0xFFF2F5EE),
+        color: Theme.of(context).inputDecorationTheme.fillColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFC0C9BE)),
+        border: Border.all(color: context.appBorder),
       ),
-      child: const TextField(
+      child: TextField(
         decoration: InputDecoration(
           hintText: "Search requests...",
-          prefixIcon: Icon(Icons.search, color: Color(0xFF707970)),
+          prefixIcon: Icon(Icons.search, color: context.appMutedText),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(vertical: 14),
         ),
@@ -105,8 +122,9 @@ class DashboardScreen extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          _filterChip("All Tasks", true, onTap: () {}),
+          _filterChip(context, "All Tasks", true, onTap: () {}),
           _filterChip(
+            context,
             "Pending",
             false,
             onTap: () {
@@ -114,6 +132,7 @@ class DashboardScreen extends StatelessWidget {
             },
           ),
           _filterChip(
+            context,
             "Ongoing",
             false,
             onTap: () {
@@ -121,6 +140,7 @@ class DashboardScreen extends StatelessWidget {
             },
           ),
           _filterChip(
+            context,
             "Completed",
             false,
             onTap: () {
@@ -128,6 +148,7 @@ class DashboardScreen extends StatelessWidget {
             },
           ),
           _filterChip(
+            context,
             "Filters",
             false,
             icon: Icons.filter_list,
@@ -139,6 +160,7 @@ class DashboardScreen extends StatelessWidget {
   }
 
   Widget _filterChip(
+    BuildContext context,
     String label,
     bool selected, {
     IconData? icon,
@@ -156,7 +178,7 @@ class DashboardScreen extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: selected ? Colors.white : const Color(0xFF191D19),
+                color: selected ? context.appOnAccent : context.appText,
               ),
               const SizedBox(width: 4),
             ],
@@ -164,10 +186,10 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
         onSelected: (_) => onTap(),
-        backgroundColor: const Color(0xFFE6E9E2),
-        selectedColor: const Color(0xFF003D1A),
+        backgroundColor: context.appSurfaceContainer,
+        selectedColor: context.appAccent,
         labelStyle: TextStyle(
-          color: selected ? Colors.white : const Color(0xFF191D19),
+          color: selected ? context.appOnAccent : context.appText,
           fontWeight: FontWeight.w600,
           fontSize: 13,
         ),
@@ -179,9 +201,9 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF12562B).withValues(alpha: 0.08),
@@ -196,30 +218,35 @@ class DashboardScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 "Active Tracking",
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF003D1A),
+                  color: context.appText,
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF94F4AD),
+                  color: context.isDarkMode
+                      ? const Color(0xFF243028)
+                      : const Color(0xFF94F4AD),
                   borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.circle, size: 10, color: Color(0xFF006D38)),
-                    SizedBox(width: 6),
+                    Icon(Icons.circle, size: 10, color: context.appAccent),
+                    const SizedBox(width: 6),
                     Text(
                       "Live Update",
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
+                        color: context.appAccent,
                       ),
                     ),
                   ],
@@ -228,7 +255,7 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          const Row(
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
@@ -237,13 +264,18 @@ class DashboardScreen extends StatelessWidget {
                   children: [
                     Text(
                       "#REQ-4829",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       "Industrial Waste Collection - Sector 7",
-                      style: TextStyle(color: Color(0xFF707970), fontSize: 13),
+                      style: TextStyle(
+                        color: context.appMutedText,
+                        fontSize: 13,
+                      ),
                     ),
                   ],
                 ),
@@ -253,14 +285,14 @@ class DashboardScreen extends StatelessWidget {
                 children: [
                   Text(
                     "Estimated Arrival",
-                    style: TextStyle(fontSize: 12, color: Color(0xFF707970)),
+                    style: TextStyle(fontSize: 12, color: context.appMutedText),
                   ),
                   Text(
                     "14 mins",
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF006D38),
+                      color: context.appAccent,
                     ),
                   ),
                 ],
@@ -268,12 +300,12 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          _buildTimeline(),
+          _buildTimeline(context),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF2F5EE),
+              color: context.appSurfaceContainer,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -285,7 +317,7 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -295,20 +327,21 @@ class DashboardScreen extends StatelessWidget {
                       ),
                       Text(
                         "Lead Technician • 4.9 ★",
-                        style:
-                            TextStyle(fontSize: 12, color: Color(0xFF707970)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.appMutedText,
+                        ),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.call, color: Color(0xFF006D38)),
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/live-call');
-                  },
+                  icon: Icon(Icons.call, color: context.appAccent),
+                  onPressed: () =>
+                      openNativeDialer(context, phoneNumber: null),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.chat, color: Color(0xFF006D38)),
+                  icon: Icon(Icons.chat, color: context.appAccent),
                   onPressed: () {
                     Navigator.pushNamed(context, '/messages');
                   },
@@ -321,13 +354,13 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeline() {
+  Widget _buildTimeline(BuildContext context) {
     return Column(
       children: [
         Container(
           height: 6,
           decoration: BoxDecoration(
-            color: const Color(0xFFE1E3DD),
+            color: context.appBorder,
             borderRadius: BorderRadius.circular(999),
           ),
           child: const FractionallySizedBox(
@@ -371,7 +404,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentRequests() {
+  Widget _buildRecentRequests(BuildContext context) {
     return Column(
       children: [
         Row(
@@ -379,6 +412,7 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Expanded(
               child: _requestCard(
+                context,
                 "Water Quality Check",
                 "Zone B - Residential Area",
                 "Completed",
@@ -389,6 +423,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: _requestCard(
+                context,
                 "Air Filtration Service",
                 "Central Plaza Hub",
                 "Pending",
@@ -399,12 +434,13 @@ class DashboardScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        _ecoAuditCard(),
+        _ecoAuditCard(context),
       ],
     );
   }
 
   Widget _requestCard(
+    BuildContext context,
     String title,
     String subtitle,
     String status,
@@ -416,9 +452,9 @@ class DashboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,10 +468,9 @@ class DashboardScreen extends StatelessWidget {
                 child: Icon(icon, color: accent, size: 20),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE1E3DD),
+                  color: context.appSurfaceContainer,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -451,32 +486,33 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF003D1A),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: const TextStyle(color: Color(0xFF707970), fontSize: 12),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 12,
+            ),
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Icon(
                 isCompleted ? Icons.check_circle : Icons.schedule,
-                color:
-                    isCompleted ? const Color(0xFF006D38) : Colors.orange,
+                color: isCompleted ? context.appAccent : Colors.orange,
                 size: 16,
               ),
               const SizedBox(width: 6),
               Text(
                 status,
                 style: TextStyle(
-                  color:
-                      isCompleted ? const Color(0xFF006D38) : Colors.orange,
+                  color: isCompleted ? context.appAccent : Colors.orange,
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
@@ -488,36 +524,39 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _ecoAuditCard() {
+  Widget _ecoAuditCard(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE8EBE6)),
+        border: Border.all(color: context.appBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             "Eco-System Audit",
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF003D1A),
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Comprehensive survey of local biodiversity corridor.",
-            style: TextStyle(color: Color(0xFF707970), fontSize: 13),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 13,
+            ),
           ),
           const SizedBox(height: 14),
           Row(
             children: [
-              _smallInfoBox("Status", "Ongoing"),
+              _smallInfoBox(context, "Status", "Ongoing"),
               const SizedBox(width: 10),
-              _smallInfoBox("Duration", "3 Days"),
+              _smallInfoBox(context, "Duration", "3 Days"),
             ],
           ),
           const SizedBox(height: 14),
@@ -526,8 +565,8 @@ class DashboardScreen extends StatelessWidget {
             child: ElevatedButton(
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF003D1A),
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -541,12 +580,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _smallInfoBox(String label, String value) {
+  Widget _smallInfoBox(BuildContext context, String label, String value) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF2F5EE),
+          color: context.appSurfaceContainer,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -554,13 +593,13 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Text(
               label,
-              style: const TextStyle(fontSize: 11, color: Color(0xFF707970)),
+              style: TextStyle(fontSize: 11, color: context.appMutedText),
             ),
             Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF003D1A),
+                color: context.appText,
               ),
             ),
           ],
@@ -574,71 +613,15 @@ class DashboardScreen extends StatelessWidget {
       onPressed: () {
         Navigator.pushNamed(context, '/schedule-service');
       },
-      backgroundColor: const Color(0xFF003D1A),
-      foregroundColor: Colors.white,
+      backgroundColor: context.appAccent,
+      foregroundColor: context.appOnAccent,
       icon: const Icon(Icons.add),
       label: const Text("New Request"),
     );
   }
 
   Widget _buildBottomNav(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: 0,
-      selectedItemColor: const Color(0xFF003D1A),
-      unselectedItemColor: const Color(0xFF707970),
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      onTap: (index) {
-        switch (index) {
-          case 0:
-            // Home
-            break;
-          case 1:
-            // Requests list
-            Navigator.pushNamed(context, '/schedule-service');
-            break;
-          case 2:
-            // Tasks / Ongoing
-            Navigator.pushNamed(context, '/request-history');
-            break;
-          case 3:
-            // Notifications
-            Navigator.pushNamed(context, '/messages');
-            break;
-          case 4:
-            // Profile
-            Navigator.pushNamed(context, '/profile');
-            break;
-        }
-      },
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home_outlined),
-          activeIcon: Icon(Icons.home),
-          label: "Home",
-        ),
-        BottomNavigationBarItem(
-         icon: Icon(Icons.add_circle_outline),
-         activeIcon: Icon(Icons.add_circle_outlined),
-         label: "Request",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.assignment_outlined),
-          activeIcon: Icon(Icons.assignment),
-          label: "Tasks",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications_outlined),
-          activeIcon: Icon(Icons.notifications),
-          label: "Notifications",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          activeIcon: Icon(Icons.person),
-          label: "Profile",
-        ),
-      ],
-    );
+    return const AppBottomNav(currentIndex: 0);
   }
 }
 
@@ -661,13 +644,13 @@ class _TimelineDot extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF006D38) : const Color(0xFFE1E3DD),
+            color: active ? context.appAccent : context.appSurfaceContainer,
             shape: BoxShape.circle,
           ),
           child: Icon(
             icon,
             size: 18,
-            color: active ? Colors.white : const Color(0xFF707970),
+            color: active ? context.appOnAccent : context.appMutedText,
           ),
         ),
         const SizedBox(height: 6),
@@ -676,7 +659,7 @@ class _TimelineDot extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w500,
-            color: active ? const Color(0xFF003D1A) : const Color(0xFF707970),
+            color: active ? context.appText : context.appMutedText,
           ),
         ),
       ],
