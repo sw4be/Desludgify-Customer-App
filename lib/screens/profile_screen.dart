@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final savedFile = await File(image.path).copy(
         '${directory.path}/profile_${DateTime.now().microsecondsSinceEpoch}$extension',
       );
-      if (_user == null) _user = await AuthStore.currentUser();
+      _user ??= await AuthStore.currentUser();
       final user = _user;
       if (user != null) {
         await _saveUser(user.copyWith(profileImagePath: savedFile.path));
@@ -654,6 +654,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showThemeDialog(BuildContext context) {
+    final messenger = ScaffoldMessenger.of(context);
     showDialog(
       context: context,
 
@@ -671,11 +672,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               onTap: () async {
                 await ThemeController.setLight();
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Light Mode selected')),
-                );
+                if (messenger.mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Light Mode selected')),
+                  );
+                }
               },
             ),
 
@@ -686,11 +690,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               onTap: () async {
                 await ThemeController.setDark();
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Dark Mode selected')),
-                );
+                if (messenger.mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('Dark Mode selected')),
+                  );
+                }
               },
             ),
 
@@ -701,11 +708,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               onTap: () async {
                 await ThemeController.setSystem();
+                if (!ctx.mounted) return;
                 Navigator.pop(ctx);
 
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('System Default selected')),
-                );
+                if (messenger.mounted) {
+                  messenger.showSnackBar(
+                    const SnackBar(content: Text('System Default selected')),
+                  );
+                }
               },
             ),
           ],
